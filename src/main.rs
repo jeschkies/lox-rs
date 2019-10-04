@@ -1,6 +1,10 @@
+mod scanner;
+
 use std::{env, fs};
 use std::io::{self, BufRead};
 use std::process::exit;
+
+use scanner::Scanner;
 
 fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
     let args: Vec<String> = env::args().collect();
@@ -23,15 +27,15 @@ fn run_file(path: &str) -> io::Result<()> {
 fn run_prompt() -> io::Result<()> {
     let stdin = io::stdin();
     for line in stdin.lock().lines() {
-        run(line?)?;
+        run(line?); // Ignore error.
         print!("> ");
     }
     Ok(())
 }
 
 fn run(source: String) -> io::Result<()> {
-    scanner = Scanner::new(source);
-    let tokens = scanner.scan_tokesn();
+    let scanner = Scanner::new(source);
+    let tokens = scanner.scan_tokens();
 
     for token in tokens {
         println!("{}", token);
