@@ -1,6 +1,7 @@
 use std::fmt;
 
-enum TokenType {
+#[derive(Debug)]
+pub enum TokenType {
     // Single-character tokens.
     LEFT_PAREN,
     RIGHT_PAREN,
@@ -60,13 +61,16 @@ pub struct Token {
 impl Token {
     pub fn new(tpe: TokenType, lexeme: String, literal: String, line: i32) -> Self {
         Self {
-            tpe, lexeme, literal, line
+            tpe,
+            lexeme,
+            literal,
+            line,
         }
     }
 }
 
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} {} {}", self.tpe, self.lexeme, self.literal)
+        write!(f, "{:?} {:?} {:?}", self.tpe, self.lexeme, self.literal)
     }
 }
