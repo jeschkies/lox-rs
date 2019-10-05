@@ -1,8 +1,9 @@
 mod scanner;
+mod token;
 
-use std::{env, fs};
 use std::io::{self, BufRead};
 use std::process::exit;
+use std::{env, fs};
 
 use scanner::Scanner;
 
@@ -49,5 +50,5 @@ fn error(line: i32, message: String) {
 
 fn report(line: i32, where_: String, message: String) {
     eprintln!("[line {}] Error{}: {}", line, where_, message);
-    // had_error = true;
+    // had_error = true; TODO: Use custom Error type
 }
