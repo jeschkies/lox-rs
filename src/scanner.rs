@@ -85,6 +85,8 @@ impl Scanner {
                     self.add_token(TokenType::Slash, None)
                 }
             }
+            ' ' | '\r' | '\t' => (), // Ignore whitespace
+            '\n' => self.line += 1,
             _ => error(self.line, "Unexpected character."),
         }
     }
