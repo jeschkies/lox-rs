@@ -35,7 +35,7 @@ fn run_prompt() -> io::Result<()> {
 }
 
 fn run(source: String) -> io::Result<()> {
-    let scanner = Scanner::new(source);
+    let mut scanner = Scanner::new(source);
     let tokens = scanner.scan_tokens();
 
     for token in tokens {
