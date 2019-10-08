@@ -37,42 +37,52 @@ impl Scanner {
     fn scan_token(&mut self) {
         let c: char = self.advance();
         match c {
-            '(' => self.add_token(TokenType::LEFT_PAREN, None),
-            ')' => self.add_token(TokenType::RIGHT_PAREN, None),
-            '{' => self.add_token(TokenType::LEFT_BRACE, None),
-            '}' => self.add_token(TokenType::RIGHT_BRACE, None),
-            ',' => self.add_token(TokenType::COMMA, None),
-            '.' => self.add_token(TokenType::DOT, None),
-            '-' => self.add_token(TokenType::MINUS, None),
-            '+' => self.add_token(TokenType::PLUS, None),
-            ';' => self.add_token(TokenType::SEMICOLON, None),
-            '*' => self.add_token(TokenType::STAR, None),
+            '(' => self.add_token(TokenType::LeftParen, None),
+            ')' => self.add_token(TokenType::RightParen, None),
+            '{' => self.add_token(TokenType::LeftBrace, None),
+            '}' => self.add_token(TokenType::RightBrace, None),
+            ',' => self.add_token(TokenType::Comma, None),
+            '.' => self.add_token(TokenType::Dot, None),
+            '-' => self.add_token(TokenType::Minus, None),
+            '+' => self.add_token(TokenType::Plus, None),
+            ';' => self.add_token(TokenType::Semicolon, None),
+            '*' => self.add_token(TokenType::Star, None),
             '!' => {
                 if self.r#match('=') {
-                    self.add_token(TokenType::BANG_EQUAL, None)
+                    self.add_token(TokenType::BangEqual, None)
                 } else {
-                    self.add_token(TokenType::BANG, None)
+                    self.add_token(TokenType::Bang, None)
                 }
             }
             '=' => {
                 if self.r#match('=') {
-                    self.add_token(TokenType::EQUAL_EQUAL, None)
+                    self.add_token(TokenType::EqualEqual, None)
                 } else {
-                    self.add_token(TokenType::EQUAL, None)
+                    self.add_token(TokenType::Equal, None)
                 }
             }
             '<' => {
                 if self.r#match('=') {
-                    self.add_token(TokenType::LESS_EQUAL, None)
+                    self.add_token(TokenType::LessEqual, None)
                 } else {
-                    self.add_token(TokenType::LESS, None)
+                    self.add_token(TokenType::Less, None)
                 }
             }
             '>' => {
                 if self.r#match('=') {
-                    self.add_token(TokenType::GREATER_EQUAL, None)
+                    self.add_token(TokenType::GreaterEqual, None)
                 } else {
-                    self.add_token(TokenType::GREATER, None)
+                    self.add_token(TokenType::Greater, None)
+                }
+            }
+            '/' => {
+                if self.r#match('/') {
+                    // A comment goes until the end of the line.
+                    while (self.peek() != '\n' && !self.is_at_end()) {
+                        self.advance();
+                    }
+                } else {
+                    self.add_token(TokenType::Slash, None)
                 }
             }
             _ => error(self.line, "Unexpected character."),
@@ -84,17 +94,29 @@ impl Scanner {
             return false;
         }
         // TODO: !self.source.get(self.current..self.current).contains(expected)
-        if (!self
+        if (self
             .source
-            .get(self.current..self.current + 1)
-            .map(|c| -> bool { c.eq(&expected.to_string()) })
-            .unwrap_or(false))
+            .chars()
+            .nth(self.current)
+            .expect("Unexpected end of source.")
+            != expected)
         {
             return false;
         }
 
         self.current += 1;
         true
+    }
+
+    fn peek(&self) -> char {
+        if self.is_at_end() {
+            '\0'
+        } else {
+            self.source
+                .chars()
+                .nth(self.current)
+                .expect("Unexpected end of source.")
+        }
     }
 
     fn is_at_end(&self) -> bool {
