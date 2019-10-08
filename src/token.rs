@@ -67,7 +67,7 @@ impl Token {
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.tpe {
-            TokenType::String { literal } => write!(f, "String {:?} {:?}", self.tpe, self.lexeme, literal),
+            TokenType::String { literal } => write!(f, "String {:?} {:?}", self.lexeme, literal),
             _ => write!(f, "{:?} {:?}", self.tpe, self.lexeme),
         }
     }
