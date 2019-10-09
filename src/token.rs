@@ -1,6 +1,7 @@
 use std::fmt;
+extern crate phf;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum TokenType {
     // Single-character tokens.
     LeftParen,
@@ -32,25 +33,28 @@ pub enum TokenType {
     Number { literal: f64 },
 
     // Keywords.
-    AND,
-    CLASS,
-    ELSE,
-    FALSE,
-    FUN,
-    FOR,
-    IF,
-    NIL,
-    OR,
-    PRINT,
-    RETURN,
-    SUPER,
-    THIS,
-    TRUE,
-    VAR,
-    WHILE,
+    And,
+    Class,
+    Else,
+    False,
+    Fun,
+    For,
+    If,
+    Nil,
+    Or,
+    Print,
+    Return,
+    Super,
+    This,
+    True,
+    Var,
+    While,
 
     EOF,
 }
+
+// Generated via phf_codegen until proc_macro_hygiene is stable.
+include!(concat!(env!("OUT_DIR"), "/keywords.rs"));
 
 pub struct Token {
     tpe: TokenType,

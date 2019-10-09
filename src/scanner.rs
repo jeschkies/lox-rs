@@ -1,4 +1,4 @@
-use crate::token::{Token, TokenType};
+use crate::token::{KEYWORDS, Token, TokenType};
 
 pub struct Scanner {
     source: String,
@@ -87,11 +87,25 @@ impl Scanner {
             c => {
                 if c.is_digit(10) {
                     self.number()
+                } else if (c.is_alphabetic() || c == '_') {
+                    self.identifier()
                 } else {
                     error(self.line, "Unexpected character.")
                 }
             }
         }
+    }
+
+    fn identifier(&mut self) {
+        while (self.peek().is_alphanumeric() || self.peek() == '_') {
+            self.advance();
+        }
+
+        // See if the identifier is a reserved word.
+        let text = self.source.get(self.start..self.current).expect("Unexpected end.");
+
+        let tpe: TokenType = KEYWORDS.get(text).cloned().unwrap_or(TokenType::Identifier);
+        self.add_token(tpe);
     }
 
     fn number(&mut self) {
