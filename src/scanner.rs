@@ -84,8 +84,38 @@ impl Scanner {
             ' ' | '\r' | '\t' => (), // Ignore whitespace
             '\n' => self.line += 1,
             '"' => self.string(),
-            _ => error(self.line, "Unexpected character."),
+            c => {
+                if c.is_digit(10) {
+                    self.number()
+                } else {
+                    error(self.line, "Unexpected character.")
+                }
+            }
         }
+    }
+
+    fn number(&mut self) {
+        while self.peek().is_digit(10) {
+            self.advance();
+        }
+
+        // Look for a fractional part.
+        if (self.peek() == '.' && self.peek_next().is_digit(10)) {
+            // Consumer the ".".
+            self.advance();
+
+            while self.peek().is_digit(10) {
+                self.advance();
+            }
+        }
+
+        let n: f64 = self
+            .source
+            .get(self.start..self.current)
+            .expect("Unexpected end.")
+            .parse()
+            .expect("Scanned number could not be parsed.");
+        self.add_token(TokenType::Number { literal: n })
     }
 
     fn string(&mut self) {
@@ -109,7 +139,9 @@ impl Scanner {
             .source
             .get((self.start + 1)..(self.current - 1))
             .expect("Unexpected end.");
-        self.add_token(TokenType::String { literal: value.to_string() });
+        self.add_token(TokenType::String {
+            literal: value.to_string(),
+        });
     }
 
     fn r#match(&mut self, expected: char) -> bool {
@@ -132,14 +164,11 @@ impl Scanner {
     }
 
     fn peek(&self) -> char {
-        if self.is_at_end() {
-            '\0'
-        } else {
-            self.source
-                .chars()
-                .nth(self.current)
-                .expect("Unexpected end of source.")
-        }
+        self.source.chars().nth(self.current).unwrap_or('\0')
+    }
+
+    fn peek_next(&self) -> char {
+        self.source.chars().nth(self.current + 1).unwrap_or('\0')
     }
 
     fn is_at_end(&self) -> bool {
