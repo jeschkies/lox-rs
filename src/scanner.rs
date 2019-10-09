@@ -1,4 +1,4 @@
-use crate::token::{KEYWORDS, Token, TokenType};
+use crate::token::{Token, TokenType, KEYWORDS};
 
 pub struct Scanner {
     source: String,
@@ -25,8 +25,7 @@ impl Scanner {
             self.scan_token();
         }
 
-        self.tokens
-            .push(Token::new(TokenType::EOF, "".to_string(), self.line));
+        self.tokens.push(Token::new(TokenType::EOF, "", self.line));
         &self.tokens
     }
 
@@ -74,7 +73,7 @@ impl Scanner {
             '/' => {
                 if self.r#match('/') {
                     // A comment goes until the end of the line.
-                    while (self.peek() != '\n' && !self.is_at_end()) {
+                    while self.peek() != '\n' && !self.is_at_end() {
                         self.advance();
                     }
                 } else {
@@ -87,7 +86,7 @@ impl Scanner {
             c => {
                 if c.is_digit(10) {
                     self.number()
-                } else if (c.is_alphabetic() || c == '_') {
+                } else if c.is_alphabetic() || c == '_' {
                     self.identifier()
                 } else {
                     error(self.line, "Unexpected character.")
@@ -97,12 +96,15 @@ impl Scanner {
     }
 
     fn identifier(&mut self) {
-        while (self.peek().is_alphanumeric() || self.peek() == '_') {
+        while self.peek().is_alphanumeric() || self.peek() == '_' {
             self.advance();
         }
 
         // See if the identifier is a reserved word.
-        let text = self.source.get(self.start..self.current).expect("Unexpected end.");
+        let text = self
+            .source
+            .get(self.start..self.current)
+            .expect("Unexpected end.");
 
         let tpe: TokenType = KEYWORDS.get(text).cloned().unwrap_or(TokenType::Identifier);
         self.add_token(tpe);
@@ -114,7 +116,7 @@ impl Scanner {
         }
 
         // Look for a fractional part.
-        if (self.peek() == '.' && self.peek_next().is_digit(10)) {
+        if self.peek() == '.' && self.peek_next().is_digit(10) {
             // Consumer the ".".
             self.advance();
 
@@ -133,7 +135,7 @@ impl Scanner {
     }
 
     fn string(&mut self) {
-        while (self.peek() != '"' && !self.is_at_end()) {
+        while self.peek() != '"' && !self.is_at_end() {
             if self.peek() == '\n' {
                 self.line += 1;
             }
@@ -149,26 +151,25 @@ impl Scanner {
         self.advance();
 
         // Trim the surrounding quotes.
-        let value = self
+        let literal = self
             .source
             .get((self.start + 1)..(self.current - 1))
-            .expect("Unexpected end.");
-        self.add_token(TokenType::String {
-            literal: value.to_string(),
-        });
+            .expect("Unexpected end.")
+            .to_string();
+        self.add_token(TokenType::String { literal });
     }
 
     fn r#match(&mut self, expected: char) -> bool {
-        if (self.is_at_end()) {
+        if self.is_at_end() {
             return false;
         }
         // TODO: !self.source.get(self.current..self.current).contains(expected)
-        if (self
+        if self
             .source
             .chars()
             .nth(self.current)
             .expect("Unexpected end of source.")
-            != expected)
+            != expected
         {
             return false;
         }
@@ -201,8 +202,7 @@ impl Scanner {
             .source
             .get(self.start..self.current)
             .expect("Source token is empty.");
-        self.tokens
-            .push(Token::new(tpe, text.to_string(), self.line))
+        self.tokens.push(Token::new(tpe, text, self.line))
     }
 }
 

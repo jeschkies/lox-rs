@@ -63,8 +63,12 @@ pub struct Token {
 }
 
 impl Token {
-    pub fn new(tpe: TokenType, lexeme: String, line: i32) -> Self {
-        Self { tpe, lexeme, line }
+    pub fn new(tpe: TokenType, lexeme: &str, line: i32) -> Self {
+        Self {
+            tpe,
+            lexeme: lexeme.to_string(),
+            line,
+        }
     }
 }
 
