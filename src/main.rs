@@ -1,3 +1,4 @@
+mod error;
 mod scanner;
 mod token;
 
@@ -42,13 +43,4 @@ fn run(source: String) -> io::Result<()> {
         println!("{}", token);
     }
     Ok(())
-}
-
-fn error(line: i32, message: String) {
-    report(line, "".to_string(), message);
-}
-
-fn report(line: i32, where_: String, message: String) {
-    eprintln!("[line {}] Error{}: {}", line, where_, message);
-    // had_error = true; TODO: Use custom Error type
 }

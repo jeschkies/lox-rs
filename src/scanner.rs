@@ -1,3 +1,4 @@
+use crate::error::error;
 use crate::token::{Token, TokenType, KEYWORDS};
 
 pub struct Scanner {
@@ -204,14 +205,4 @@ impl Scanner {
             .expect("Source token is empty.");
         self.tokens.push(Token::new(tpe, text, self.line))
     }
-}
-
-// TODO: remove duplicate of reporting
-fn error(line: i32, message: &str) {
-    report(line, "".to_string(), message);
-}
-
-fn report(line: i32, where_: String, message: &str) {
-    eprintln!("[line {}] Error{}: {}", line, where_, message);
-    // had_error = true; TODO: Use custom Error type
 }
