@@ -1,4 +1,3 @@
-
 pub fn error(line: i32, message: &str) {
     report(line, "", message);
 }
