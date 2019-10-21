@@ -73,3 +73,31 @@ impl Visitor<String> for AstPrinter {
         self.parenthesize(operator.lexeme.clone(), vec![right])
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::token::{Token, TokenType};
+
+    #[test]
+    fn test_printer() {
+        let expression = Expr::Binary {
+            left: Box::new(Expr::Unary {
+                operator: Token::new(TokenType::Minus,"-", 1),
+                right: Box::new(Expr::Literal {
+                    value: "123".to_string(),
+                }),
+            }),
+            operator: Token::new(TokenType::Star, "*", 1),
+            right: Box::new(Expr::Grouping {
+                expression: Box::new(Expr::Literal {
+                    value: "45.67".to_string(),
+                }),
+            }),
+        };
+        let printer = AstPrinter;
+
+        assert_eq!(printer.print(expression), "(* (- 123) (group 45.67))");
+    }
+}
