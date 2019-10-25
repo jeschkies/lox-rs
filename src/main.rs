@@ -1,5 +1,6 @@
 mod error;
 mod scanner;
+mod syntax;
 mod token;
 
 use std::io::{self, BufRead};
