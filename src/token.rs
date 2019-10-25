@@ -57,7 +57,7 @@ pub enum TokenType {
 include!(concat!(env!("OUT_DIR"), "/keywords.rs"));
 
 pub struct Token {
-    tpe: TokenType,
+    pub tpe: TokenType,
     pub lexeme: String,
     line: i32,
 }

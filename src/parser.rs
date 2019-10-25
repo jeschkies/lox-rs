@@ -44,9 +44,31 @@ impl Parser {
         expr
     }
 
-    fn check(&self, toke_type: TokenType) -> bool {
-        false
+    fn check(&self, token_type: TokenType) -> bool {
+        if self.is_at_end() {
+            return false;
+        }
+
+        token_type == self.peek().tpe
     }
 
-    fn advance(&self) {}
+    fn advance(&self) {
+        unimplemented!()
+    }
+
+    fn previous(&self) -> Token {
+        unimplemented!()
+    }
+
+    fn peek(&self) -> Token {
+        unimplemented!()
+    }
+
+    fn is_at_end(&self) -> bool {
+        unimplemented!()
+    }
+
+    fn comparison(&self) -> Expr {
+        unimplemented!()
+    }
 }
