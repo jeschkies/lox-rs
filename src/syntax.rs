@@ -28,10 +28,14 @@ pub trait Visitor<R> {
 impl Expr {
     pub fn accept<R>(&self, visitor: &Visitor<R>) -> R {
         match self {
-            Expr::Binary {left, operator, right} => visitor.visit_binary_expr(left, operator, right),
+            Expr::Binary {
+                left,
+                operator,
+                right,
+            } => visitor.visit_binary_expr(left, operator, right),
             Expr::Grouping { expression } => visitor.visit_grouping_expr(expression),
             Expr::Literal { value } => visitor.visit_literal_expr(value.to_string()),
-            Expr::Unary {operator, right } => visitor.visit_unary_expr(operator, right),
+            Expr::Unary { operator, right } => visitor.visit_unary_expr(operator, right),
         }
     }
 }
@@ -74,7 +78,6 @@ impl Visitor<String> for AstPrinter {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -84,7 +87,7 @@ mod tests {
     fn test_printer() {
         let expression = Expr::Binary {
             left: Box::new(Expr::Unary {
-                operator: Token::new(TokenType::Minus,"-", 1),
+                operator: Token::new(TokenType::Minus, "-", 1),
                 right: Box::new(Expr::Literal {
                     value: "123".to_string(),
                 }),

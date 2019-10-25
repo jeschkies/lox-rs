@@ -1,7 +1,7 @@
 use std::fmt;
 extern crate phf;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TokenType {
     // Single-character tokens.
     LeftParen,
