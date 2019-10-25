@@ -9,7 +9,7 @@ struct Parser {
 macro_rules! matches {
     ( $sel:ident, $( $x:expr ),* ) => {
         {
-            if $( $sel.check($x) )&&* {
+            if $( $sel.check($x) )||* {
                 $sel.advance();
                 true
             } else {
