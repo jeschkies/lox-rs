@@ -1,4 +1,5 @@
 use crate::token::Token;
+use std::fmt;
 
 pub enum Expr {
     Binary {
@@ -10,12 +11,30 @@ pub enum Expr {
         expression: Box<Expr>,
     },
     Literal {
-        value: String,
-    }, // Object in chapter 5
+        value: LiteralValue,
+    },
     Unary {
         operator: Token,
         right: Box<Expr>,
     },
+}
+
+pub enum LiteralValue {
+    Boolean(bool),
+    Null,
+    Number(f64),
+    String(String),
+}
+
+impl fmt::Display for LiteralValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            LiteralValue::Boolean(b) => write!(f, "{}", b),
+            LiteralValue::Null => write!(f, "null"),
+            LiteralValue::Number(n) => write!(f, "{}", n),
+            LiteralValue::String(s) => write!(f, "{}", s),
+        }
+    }
 }
 
 pub trait Visitor<R> {

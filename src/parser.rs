@@ -1,4 +1,4 @@
-use crate::syntax::Expr;
+use crate::syntax::{Expr, LiteralValue};
 use crate::token::{Token, TokenType};
 
 struct Parser {
@@ -86,7 +86,7 @@ impl Parser {
             TokenType::Less,
             TokenType::LessEqual
         ) {
-            let operator = (*self.previous()).clone();
+            let operator:Token = self.previous().clone();
             let right = self.addition();
             expr = Expr::Binary {
                 left: Box::new(expr),
@@ -102,7 +102,7 @@ impl Parser {
         let mut expr = self.multiplication();
 
         while matches!(self, TokenType::Minus, TokenType::Plus) {
-            let operator = (*self.previous()).clone();
+            let operator: Token = self.previous().clone();
             let right = self.multiplication();
             expr = Expr::Binary {
                 left: Box::new(expr),
@@ -118,7 +118,7 @@ impl Parser {
         let mut expr = self.unary();
 
         while matches!(self, TokenType::Slash, TokenType::Star) {
-            let operator = (*self.previous()).clone();
+            let operator: Token = self.previous().clone();
             let right = self.unary();
             expr = Expr::Binary {
                 left: Box::new(expr),
@@ -132,15 +132,52 @@ impl Parser {
 
     fn unary(&mut self) -> Expr {
         if matches!(self, TokenType::Bang, TokenType::Minus) {
-            let operator = (*self.previous()).clone();
+            let operator: Token = self.previous().clone();
             let right = self.unary();
-            Expr::Unary {operator, right: Box::new(right)}
+            Expr::Unary {
+                operator,
+                right: Box::new(right),
+            }
         } else {
             self.primary()
         }
     }
 
     fn primary(&mut self) -> Expr {
+        if !self.is_at_end() {
+            let expr = match &self.peek().tpe {
+                TokenType::False => Expr::Literal {
+                    value: LiteralValue::Boolean(false),
+                },
+                TokenType::True => Expr::Literal {
+                    value: LiteralValue::Boolean(true),
+                },
+                TokenType::Nil => Expr::Literal {
+                    value: LiteralValue::Null,
+                },
+                TokenType::String { literal } => Expr::Literal {
+                    value: LiteralValue::String(literal.clone()),
+                },
+                TokenType::Number { literal } => Expr::Literal {
+                    value: LiteralValue::Number(literal.clone()),
+                },
+                TokenType::LeftParen => {
+                    let expr = self.expression();
+                    self.consume(TokenType::RightParen, "Expected ')' after expression.");
+                    Expr::Grouping {
+                        expression: Box::new(expr),
+                    }
+                }
+                _ => panic!("Unexpected token"),
+            };
+            self.advance();
+            expr
+        } else {
+            panic!("Unexpected end.")
+        }
+    }
+
+    fn consume(&self, tpe: TokenType, msg: &str) {
         unimplemented!()
     }
 }
