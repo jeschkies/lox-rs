@@ -60,7 +60,7 @@ include!(concat!(env!("OUT_DIR"), "/keywords.rs"));
 pub struct Token {
     pub tpe: TokenType,
     pub lexeme: String,
-    line: i32,
+    pub line: i32,
 }
 
 impl Token {

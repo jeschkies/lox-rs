@@ -1,3 +1,4 @@
+use crate::error::{parser_error, Error};
 use crate::syntax::{Expr, LiteralValue};
 use crate::token::{Token, TokenType};
 
@@ -53,6 +54,14 @@ impl Parser {
         token_type == self.peek().tpe
     }
 
+    fn consume(&mut self, tpe: TokenType, message: &str) -> Result<Token, Error> {
+        if self.check(tpe) {
+            Ok(self.advance().clone())
+        } else {
+            Err(self.error(self.peek(), message))
+        }
+    }
+
     fn advance(&mut self) -> &Token {
         if self.is_at_end() {
             self.current += 1;
@@ -64,6 +73,11 @@ impl Parser {
         self.tokens
             .get(self.current - 1)
             .expect("Previous was empty.")
+    }
+
+    fn error(&self, token: &Token, message: &str) -> Error {
+        parser_error(token, message);
+        Error::Parser
     }
 
     fn peek(&self) -> &Token {
@@ -86,7 +100,7 @@ impl Parser {
             TokenType::Less,
             TokenType::LessEqual
         ) {
-            let operator:Token = self.previous().clone();
+            let operator: Token = self.previous().clone();
             let right = self.addition();
             expr = Expr::Binary {
                 left: Box::new(expr),
@@ -144,7 +158,7 @@ impl Parser {
     }
 
     fn primary(&mut self) -> Expr {
-        /* We don't use matches!() here since we want to extract the literals. */
+        // We don't use matches!() here since we want to extract the literals.
         if !self.is_at_end() {
             let expr = match &self.peek().tpe {
                 TokenType::False => Expr::Literal {
@@ -164,7 +178,8 @@ impl Parser {
                 },
                 TokenType::LeftParen => {
                     let expr = self.expression();
-                    self.consume(TokenType::RightParen, "Expected ')' after expression.");
+                    self.consume(TokenType::RightParen, "Expected ')' after expression.")
+                        .expect("Unhandled error"); // TODO: handle result
                     Expr::Grouping {
                         expression: Box::new(expr),
                     }
@@ -176,9 +191,5 @@ impl Parser {
         } else {
             panic!("Unexpected end.")
         }
-    }
-
-    fn consume(&self, tpe: TokenType, msg: &str) {
-        unimplemented!()
     }
 }
