@@ -21,13 +21,13 @@ pub fn parser_error(token: &Token, message: &str) {
 
 #[derive(Debug)]
 pub enum Error {
-    Parser,
+    Parse,
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Error::Parser => write!(f, "ParserError"),
+            Error::Parse => write!(f, "ParseError"),
         }
     }
 }

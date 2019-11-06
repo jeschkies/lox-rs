@@ -77,7 +77,29 @@ impl Parser {
 
     fn error(&self, token: &Token, message: &str) -> Error {
         parser_error(token, message);
-        Error::Parser
+        Error::Parse
+    }
+
+    fn synchronize(&mut self) {
+        self.advance();
+
+        while !self.is_at_end() {
+            if self.previous().tpe == TokenType::Semicolon {
+                return;
+            }
+
+            match self.peek().tpe {
+                TokenType::Class
+                | TokenType::Fun
+                | TokenType::Var
+                | TokenType::For
+                | TokenType::If
+                | TokenType::While
+                | TokenType::Print
+                | TokenType::Return => return,
+                _ => self.advance(),
+            };
+        }
     }
 
     fn peek(&self) -> &Token {
