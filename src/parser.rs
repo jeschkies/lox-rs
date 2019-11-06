@@ -67,7 +67,7 @@ impl<'t> Parser<'t> {
     }
 
     fn advance(&mut self) -> &Token {
-        if self.is_at_end() {
+        if !self.is_at_end() {
             self.current += 1;
         }
         self.previous()
@@ -214,5 +214,24 @@ impl<'t> Parser<'t> {
         self.advance();
 
         Ok(expr)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::scanner::Scanner;
+    use crate::syntax::AstPrinter;
+
+    #[test]
+    fn test_parser() {
+        let mut scanner = Scanner::new("-123 * 45.67".to_string());
+        let tokens = scanner.scan_tokens();
+
+        let mut parser = Parser::new(tokens);
+        let expression = parser.parse().expect("Could not parse sample code.");
+        let printer = AstPrinter;
+
+        assert_eq!(printer.print(expression), "(* (- 123) 45.67)");
     }
 }
