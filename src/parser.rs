@@ -2,8 +2,8 @@ use crate::error::{parser_error, Error};
 use crate::syntax::{Expr, LiteralValue};
 use crate::token::{Token, TokenType};
 
-struct Parser {
-    tokens: Vec<Token>,
+pub struct Parser<'t> {
+    tokens: &'t Vec<Token>,
     current: usize,
 }
 
@@ -21,13 +21,13 @@ macro_rules! matches {
     };
 }
 
-impl Parser {
-    fn new(tokens: Vec<Token>) -> Self {
+impl<'t> Parser<'t> {
+    pub fn new(tokens: &'t Vec<Token>) -> Self {
         Parser { tokens, current: 0 }
     }
 
-    fn parse(&mut self) -> Expr {
-        self.expression().expect("TODO: Handle parse error.")
+    pub fn parse(&mut self) -> Option<Expr> {
+        self.expression().ok()
     }
 
     fn expression(&mut self) -> Result<Expr, Error> {

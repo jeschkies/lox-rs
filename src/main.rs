@@ -41,8 +41,10 @@ fn run(source: String) -> io::Result<()> {
     let mut scanner = Scanner::new(source);
     let tokens = scanner.scan_tokens();
 
-    for token in tokens {
-        println!("{}", token);
+    let mut parser = parser::Parser::new(tokens);
+    if let Some(expression) = parser.parse() {
+        let printer = syntax::AstPrinter;
+        println!("{}", printer.print(expression));
     }
     Ok(())
 }
