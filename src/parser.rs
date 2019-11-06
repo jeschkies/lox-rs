@@ -144,6 +144,7 @@ impl Parser {
     }
 
     fn primary(&mut self) -> Expr {
+        /* We don't use matches!() here since we want to extract the literals. */
         if !self.is_at_end() {
             let expr = match &self.peek().tpe {
                 TokenType::False => Expr::Literal {

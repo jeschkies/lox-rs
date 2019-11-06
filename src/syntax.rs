@@ -108,13 +108,13 @@ mod tests {
             left: Box::new(Expr::Unary {
                 operator: Token::new(TokenType::Minus, "-", 1),
                 right: Box::new(Expr::Literal {
-                    value: "123".to_string(),
+                    value: LiteralValue::Number(123f64),
                 }),
             }),
             operator: Token::new(TokenType::Star, "*", 1),
             right: Box::new(Expr::Grouping {
                 expression: Box::new(Expr::Literal {
-                    value: "45.67".to_string(),
+                    value: LiteralValue::Number(45.67f64),
                 }),
             }),
         };
