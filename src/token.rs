@@ -56,6 +56,7 @@ pub enum TokenType {
 // Generated via phf_codegen until proc_macro_hygiene is stable.
 include!(concat!(env!("OUT_DIR"), "/keywords.rs"));
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct Token {
     pub tpe: TokenType,
     pub lexeme: String,
