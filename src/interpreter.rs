@@ -9,6 +9,20 @@ enum Object {
     String(String),
 }
 
+impl Object {
+    fn equals(&self, other: &Object) -> bool {
+        match (self, other) {
+            (Object::Null, Object::Null) => true,
+            (_, Object::Null) => false,
+            (Object::Null, _) => false,
+            (Object::Boolean(left), Object::Boolean(right)) => left == right,
+            (Object::Number(left), Object::Number(right)) => left == right,
+            (Object::String(left), Object::String(right)) => left.eq(right),
+            _ => false,
+        }
+    }
+}
+
 pub struct Interpreter;
 
 impl Interpreter {
@@ -23,15 +37,32 @@ impl Interpreter {
             _ => true,
         }
     }
+
+    fn is_equal(&self, left: &Object, right: &Object) -> bool {
+        left.equals(right)
+    }
 }
 
 impl Visitor<Object> for Interpreter {
-
     fn visit_binary_expr(&self, left: &Expr, operator: &Token, right: &Expr) -> Object {
         let l = self.evaluate(left);
         let r = self.evaluate(right);
 
         match (l, &operator.tpe, r) {
+            (Object::Number(left_number), TokenType::Greater, Object::Number(right_number)) => {
+                Object::Boolean(left_number > right_number)
+            }
+            (
+                Object::Number(left_number),
+                TokenType::GreaterEqual,
+                Object::Number(right_number),
+            ) => Object::Boolean(left_number >= right_number),
+            (Object::Number(left_number), TokenType::Less, Object::Number(right_number)) => {
+                Object::Boolean(left_number < right_number)
+            }
+            (Object::Number(left_number), TokenType::LessEqual, Object::Number(right_number)) => {
+                Object::Boolean(left_number <= right_number)
+            }
             (Object::Number(left_number), TokenType::Minus, Object::Number(right_number)) => {
                 Object::Number(left_number - right_number)
             }
@@ -46,6 +77,12 @@ impl Visitor<Object> for Interpreter {
             }
             (Object::Number(left_number), TokenType::Star, Object::Number(right_number)) => {
                 Object::Number(left_number * right_number)
+            }
+            (left_object, TokenType::BangEqual, right_object) => {
+                Object::Boolean(!self.is_equal(&left_object, &right_object))
+            }
+            (left_object, TokenType::EqualEqual, right_object) => {
+                Object::Boolean(self.is_equal(&left_object, &right_object))
             }
             _ => unreachable!(), // TODO: handle other types
         }
