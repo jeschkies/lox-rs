@@ -39,6 +39,12 @@ impl fmt::Display for LiteralValue {
 
 pub trait Visitor<R> {
     fn visit_binary_expr(&self, left: &Expr, operator: &Token, right: &Expr) -> R;
+
+    /// Visit a grouping expression.
+    ///
+    /// # Arguments
+    ///
+    /// * `expression` - This is the *inner* expression of the grouping.
     fn visit_grouping_expr(&self, expression: &Expr) -> R;
     fn visit_literal_expr(&self, value: &LiteralValue) -> R;
     fn visit_unary_expr(&self, operator: &Token, right: &Expr) -> R;

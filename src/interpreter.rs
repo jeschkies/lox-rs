@@ -11,6 +11,13 @@ enum Object {
 
 pub struct Interpreter;
 
+impl Interpreter {
+
+    fn evaluate(&self, expression: &Expr) -> Object {
+        expression.accept(self)
+    }
+}
+
 impl Visitor<Object> for Interpreter { // TODO: Book defines result type as Object
 
     fn visit_binary_expr(&self, left: &Expr, operator: &Token, right: &Expr) -> Object {
@@ -18,7 +25,7 @@ impl Visitor<Object> for Interpreter { // TODO: Book defines result type as Obje
     }
 
     fn visit_grouping_expr(&self, expr: &Expr) -> Object {
-        unimplemented!()
+        self.evaluate(expr)
     }
 
     fn visit_literal_expr(&self, value: &LiteralValue) -> Object {
