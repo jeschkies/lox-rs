@@ -40,7 +40,7 @@ impl fmt::Display for LiteralValue {
 pub trait Visitor<R> {
     fn visit_binary_expr(&self, left: &Expr, operator: &Token, right: &Expr) -> R;
     fn visit_grouping_expr(&self, expression: &Expr) -> R;
-    fn visit_literal_expr(&self, value: String) -> R;
+    fn visit_literal_expr(&self, value: &LiteralValue) -> R;
     fn visit_unary_expr(&self, operator: &Token, right: &Expr) -> R;
 }
 
@@ -53,7 +53,7 @@ impl Expr {
                 right,
             } => visitor.visit_binary_expr(left, operator, right),
             Expr::Grouping { expression } => visitor.visit_grouping_expr(expression),
-            Expr::Literal { value } => visitor.visit_literal_expr(value.to_string()),
+            Expr::Literal { value } => visitor.visit_literal_expr(value),
             Expr::Unary { operator, right } => visitor.visit_unary_expr(operator, right),
         }
     }
@@ -88,8 +88,8 @@ impl Visitor<String> for AstPrinter {
         self.parenthesize("group".to_string(), vec![expr])
     }
 
-    fn visit_literal_expr(&self, value: String) -> String {
-        value // check for null
+    fn visit_literal_expr(&self, value: &LiteralValue) -> String {
+        value.to_string() // check for null
     }
 
     fn visit_unary_expr(&self, operator: &Token, right: &Expr) -> String {
