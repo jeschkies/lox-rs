@@ -1,4 +1,5 @@
 use crate::token::Token;
+use std::fmt;
 
 pub enum Expr {
     Binary {
@@ -10,12 +11,30 @@ pub enum Expr {
         expression: Box<Expr>,
     },
     Literal {
-        value: String,
-    }, // Object in chapter 5
+        value: LiteralValue,
+    },
     Unary {
         operator: Token,
         right: Box<Expr>,
     },
+}
+
+pub enum LiteralValue {
+    Boolean(bool),
+    Null,
+    Number(f64),
+    String(String),
+}
+
+impl fmt::Display for LiteralValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            LiteralValue::Boolean(b) => write!(f, "{}", b),
+            LiteralValue::Null => write!(f, "null"),
+            LiteralValue::Number(n) => write!(f, "{}", n),
+            LiteralValue::String(s) => write!(f, "{}", s),
+        }
+    }
 }
 
 pub trait Visitor<R> {
@@ -28,10 +47,14 @@ pub trait Visitor<R> {
 impl Expr {
     pub fn accept<R>(&self, visitor: &Visitor<R>) -> R {
         match self {
-            Expr::Binary {left, operator, right} => visitor.visit_binary_expr(left, operator, right),
+            Expr::Binary {
+                left,
+                operator,
+                right,
+            } => visitor.visit_binary_expr(left, operator, right),
             Expr::Grouping { expression } => visitor.visit_grouping_expr(expression),
             Expr::Literal { value } => visitor.visit_literal_expr(value.to_string()),
-            Expr::Unary {operator, right } => visitor.visit_unary_expr(operator, right),
+            Expr::Unary { operator, right } => visitor.visit_unary_expr(operator, right),
         }
     }
 }
@@ -74,7 +97,6 @@ impl Visitor<String> for AstPrinter {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -84,15 +106,15 @@ mod tests {
     fn test_printer() {
         let expression = Expr::Binary {
             left: Box::new(Expr::Unary {
-                operator: Token::new(TokenType::Minus,"-", 1),
+                operator: Token::new(TokenType::Minus, "-", 1),
                 right: Box::new(Expr::Literal {
-                    value: "123".to_string(),
+                    value: LiteralValue::Number(123f64),
                 }),
             }),
             operator: Token::new(TokenType::Star, "*", 1),
             right: Box::new(Expr::Grouping {
                 expression: Box::new(Expr::Literal {
-                    value: "45.67".to_string(),
+                    value: LiteralValue::Number(45.67f64),
                 }),
             }),
         };

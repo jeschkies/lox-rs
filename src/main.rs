@@ -1,4 +1,5 @@
 mod error;
+mod parser;
 mod scanner;
 mod syntax;
 mod token;
@@ -7,7 +8,9 @@ use std::io::{self, BufRead};
 use std::process::exit;
 use std::{env, fs};
 
+use parser::Parser;
 use scanner::Scanner;
+use syntax::AstPrinter;
 
 fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
     let args: Vec<String> = env::args().collect();
@@ -40,8 +43,10 @@ fn run(source: String) -> io::Result<()> {
     let mut scanner = Scanner::new(source);
     let tokens = scanner.scan_tokens();
 
-    for token in tokens {
-        println!("{}", token);
+    let mut parser = Parser::new(tokens);
+    if let Some(expression) = parser.parse() {
+        let printer = AstPrinter;
+        println!("{}", printer.print(expression));
     }
     Ok(())
 }

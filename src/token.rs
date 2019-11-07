@@ -1,7 +1,7 @@
 use std::fmt;
 extern crate phf;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TokenType {
     // Single-character tokens.
     LeftParen,
@@ -56,10 +56,11 @@ pub enum TokenType {
 // Generated via phf_codegen until proc_macro_hygiene is stable.
 include!(concat!(env!("OUT_DIR"), "/keywords.rs"));
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct Token {
-    tpe: TokenType,
+    pub tpe: TokenType,
     pub lexeme: String,
-    line: i32,
+    pub line: i32,
 }
 
 impl Token {
