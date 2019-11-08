@@ -1,3 +1,4 @@
+use crate::error::Error;
 use crate::token::Token;
 use std::fmt;
 
@@ -38,20 +39,20 @@ impl fmt::Display for LiteralValue {
 }
 
 pub trait Visitor<R> {
-    fn visit_binary_expr(&self, left: &Expr, operator: &Token, right: &Expr) -> R;
+    fn visit_binary_expr(&self, left: &Expr, operator: &Token, right: &Expr) -> Result<R, Error>;
 
     /// Visit a grouping expression.
     ///
     /// # Arguments
     ///
     /// * `expression` - This is the *inner* expression of the grouping.
-    fn visit_grouping_expr(&self, expression: &Expr) -> R;
-    fn visit_literal_expr(&self, value: &LiteralValue) -> R;
-    fn visit_unary_expr(&self, operator: &Token, right: &Expr) -> R;
+    fn visit_grouping_expr(&self, expression: &Expr) -> Result<R, Error>;
+    fn visit_literal_expr(&self, value: &LiteralValue) -> Result<R, Error>;
+    fn visit_unary_expr(&self, operator: &Token, right: &Expr) -> Result<R, Error>;
 }
 
 impl Expr {
-    pub fn accept<R>(&self, visitor: &Visitor<R>) -> R {
+    pub fn accept<R>(&self, visitor: &Visitor<R>) -> Result<R, Error> {
         match self {
             Expr::Binary {
                 left,
@@ -68,37 +69,42 @@ impl Expr {
 pub struct AstPrinter;
 
 impl AstPrinter {
-    pub fn print(&self, expr: Expr) -> String {
+    pub fn print(&self, expr: Expr) -> Result<String, Error> {
         expr.accept(self)
     }
 
-    fn parenthesize(&self, name: String, exprs: Vec<&Expr>) -> String {
+    fn parenthesize(&self, name: String, exprs: Vec<&Expr>) -> Result<String, Error> {
         let mut r = String::new();
         r.push_str("(");
         r.push_str(&name);
         for e in &exprs {
             r.push_str(" ");
-            r.push_str(&e.accept(self));
+            r.push_str(&e.accept(self)?);
         }
         r.push_str(")");
-        r
+        Ok(r)
     }
 }
 
 impl Visitor<String> for AstPrinter {
-    fn visit_binary_expr(&self, left: &Expr, operator: &Token, right: &Expr) -> String {
+    fn visit_binary_expr(
+        &self,
+        left: &Expr,
+        operator: &Token,
+        right: &Expr,
+    ) -> Result<String, Error> {
         self.parenthesize(operator.lexeme.clone(), vec![left, right])
     }
 
-    fn visit_grouping_expr(&self, expr: &Expr) -> String {
+    fn visit_grouping_expr(&self, expr: &Expr) -> Result<String, Error> {
         self.parenthesize("group".to_string(), vec![expr])
     }
 
-    fn visit_literal_expr(&self, value: &LiteralValue) -> String {
-        value.to_string() // check for null
+    fn visit_literal_expr(&self, value: &LiteralValue) -> Result<String, Error> {
+        Ok(value.to_string()) // check for null
     }
 
-    fn visit_unary_expr(&self, operator: &Token, right: &Expr) -> String {
+    fn visit_unary_expr(&self, operator: &Token, right: &Expr) -> Result<String, Error> {
         self.parenthesize(operator.lexeme.clone(), vec![right])
     }
 }
@@ -126,6 +132,9 @@ mod tests {
         };
         let printer = AstPrinter;
 
-        assert_eq!(printer.print(expression), "(* (- 123) (group 45.67))");
+        assert_eq!(
+            printer.print(expression).unwrap(),
+            "(* (- 123) (group 45.67))"
+        );
     }
 }

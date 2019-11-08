@@ -1,3 +1,4 @@
+use crate::error::Error;
 use crate::syntax::{Expr, LiteralValue, Visitor};
 use crate::token::{Token, TokenType};
 
@@ -26,7 +27,7 @@ impl Object {
 pub struct Interpreter;
 
 impl Interpreter {
-    fn evaluate(&self, expression: &Expr) -> Object {
+    fn evaluate(&self, expression: &Expr) -> Result<Object, Error> {
         expression.accept(self)
     }
 
@@ -41,72 +42,109 @@ impl Interpreter {
     fn is_equal(&self, left: &Object, right: &Object) -> bool {
         left.equals(right)
     }
+
+    /// Equivalent to checkNumberOperands
+    fn number_operand_error<R>(&self, operator: &Token) -> Result<R, Error> {
+        Err(Error::Runtime {
+            token: operator.clone(),
+            message: "Operand must be a number.".to_string(),
+        })
+    }
 }
 
 impl Visitor<Object> for Interpreter {
-    fn visit_binary_expr(&self, left: &Expr, operator: &Token, right: &Expr) -> Object {
-        let l = self.evaluate(left);
-        let r = self.evaluate(right);
+    fn visit_binary_expr(
+        &self,
+        left: &Expr,
+        operator: &Token,
+        right: &Expr,
+    ) -> Result<Object, Error> {
+        let l = self.evaluate(left)?;
+        let r = self.evaluate(right)?;
 
-        match (l, &operator.tpe, r) {
-            (Object::Number(left_number), TokenType::Greater, Object::Number(right_number)) => {
-                Object::Boolean(left_number > right_number)
-            }
-            (
-                Object::Number(left_number),
-                TokenType::GreaterEqual,
-                Object::Number(right_number),
-            ) => Object::Boolean(left_number >= right_number),
-            (Object::Number(left_number), TokenType::Less, Object::Number(right_number)) => {
-                Object::Boolean(left_number < right_number)
-            }
-            (Object::Number(left_number), TokenType::LessEqual, Object::Number(right_number)) => {
-                Object::Boolean(left_number <= right_number)
-            }
-            (Object::Number(left_number), TokenType::Minus, Object::Number(right_number)) => {
-                Object::Number(left_number - right_number)
-            }
-            (Object::Number(left_number), TokenType::Plus, Object::Number(right_number)) => {
-                Object::Number(left_number + right_number)
-            }
-            (Object::String(left_string), TokenType::Plus, Object::String(right_string)) => {
-                Object::String(left_string.clone() + &right_string)
-            }
-            (Object::Number(left_number), TokenType::Slash, Object::Number(right_number)) => {
-                Object::Number(left_number / right_number)
-            }
-            (Object::Number(left_number), TokenType::Star, Object::Number(right_number)) => {
-                Object::Number(left_number * right_number)
-            }
-            (left_object, TokenType::BangEqual, right_object) => {
-                Object::Boolean(!self.is_equal(&left_object, &right_object))
-            }
-            (left_object, TokenType::EqualEqual, right_object) => {
-                Object::Boolean(self.is_equal(&left_object, &right_object))
-            }
-            _ => unreachable!(), // TODO: handle other types
+        match &operator.tpe {
+            TokenType::Greater => match (l, r) {
+                (Object::Number(left_number), Object::Number(right_number)) => {
+                    Ok(Object::Boolean(left_number > right_number))
+                }
+                _ => self.number_operand_error(operator),
+            },
+            TokenType::GreaterEqual => match (l, r) {
+                (Object::Number(left_number), Object::Number(right_number)) => {
+                    Ok(Object::Boolean(left_number >= right_number))
+                }
+                _ => self.number_operand_error(operator),
+            },
+            TokenType::Less => match (l, r) {
+                (Object::Number(left_number), Object::Number(right_number)) => {
+                    Ok(Object::Boolean(left_number < right_number))
+                }
+                _ => self.number_operand_error(operator),
+            },
+            TokenType::LessEqual => match (l, r) {
+                (Object::Number(left_number), Object::Number(right_number)) => {
+                    Ok(Object::Boolean(left_number <= right_number))
+                }
+                _ => self.number_operand_error(operator),
+            },
+            TokenType::Minus => match (l, r) {
+                (Object::Number(left_number), Object::Number(right_number)) => {
+                    Ok(Object::Number(left_number - right_number))
+                }
+                _ => self.number_operand_error(operator),
+            },
+            TokenType::Plus => match (l, r) {
+                (Object::Number(left_number), Object::Number(right_number)) => {
+                    Ok(Object::Number(left_number + right_number))
+                }
+                (Object::String(left_string), Object::String(right_string)) => {
+                    Ok(Object::String(left_string.clone() + &right_string))
+                }
+                _ => Err(Error::Runtime {
+                    token: operator.clone(),
+                    message: "Operands must be two numbers or two strings.".to_string(),
+                }),
+            },
+            TokenType::Slash => match (l, r) {
+                (Object::Number(left_number), Object::Number(right_number)) => {
+                    Ok(Object::Number(left_number / right_number))
+                }
+                _ => self.number_operand_error(operator),
+            },
+            TokenType::Star => match (l, r) {
+                (Object::Number(left_number), Object::Number(right_number)) => {
+                    Ok(Object::Number(left_number * right_number))
+                }
+                _ => self.number_operand_error(operator),
+            },
+            TokenType::BangEqual => Ok(Object::Boolean(!self.is_equal(&l, &r))),
+            TokenType::EqualEqual => Ok(Object::Boolean(self.is_equal(&l, &r))),
+            _ => unreachable!(),
         }
     }
 
-    fn visit_grouping_expr(&self, expr: &Expr) -> Object {
+    fn visit_grouping_expr(&self, expr: &Expr) -> Result<Object, Error> {
         self.evaluate(expr)
     }
 
-    fn visit_literal_expr(&self, value: &LiteralValue) -> Object {
+    fn visit_literal_expr(&self, value: &LiteralValue) -> Result<Object, Error> {
         match value {
-            LiteralValue::Boolean(b) => Object::Boolean(b.clone()),
-            LiteralValue::Null => Object::Null,
-            LiteralValue::Number(n) => Object::Number(n.clone()),
-            LiteralValue::String(s) => Object::String(s.clone()),
+            LiteralValue::Boolean(b) => Ok(Object::Boolean(b.clone())),
+            LiteralValue::Null => Ok(Object::Null),
+            LiteralValue::Number(n) => Ok(Object::Number(n.clone())),
+            LiteralValue::String(s) => Ok(Object::String(s.clone())),
         }
     }
 
-    fn visit_unary_expr(&self, operator: &Token, right: &Expr) -> Object {
-        let right = self.evaluate(right);
+    fn visit_unary_expr(&self, operator: &Token, right: &Expr) -> Result<Object, Error> {
+        let right = self.evaluate(right)?;
 
-        match (&operator.tpe, &right) {
-            (TokenType::Minus, Object::Number(n)) => Object::Number(-n.clone()),
-            (TokenType::Bang, _) => Object::Boolean(!self.is_truthy(&right)), // TODO: is_truthy could simply return an Object.
+        match &operator.tpe {
+            TokenType::Minus => match right {
+                Object::Number(n) => Ok(Object::Number(-n.clone())),
+                _ => self.number_operand_error(operator),
+            },
+            TokenType::Bang => Ok(Object::Boolean(!self.is_truthy(&right))), // TODO: is_truthy could simply return an Object.
             _ => unreachable!(), // TODO: fail if right is not a number.
         }
     }

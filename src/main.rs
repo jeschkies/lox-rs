@@ -9,6 +9,7 @@ use std::io::{self, BufRead};
 use std::process::exit;
 use std::{env, fs};
 
+use error::Error;
 use parser::Parser;
 use scanner::Scanner;
 use syntax::AstPrinter;
@@ -26,12 +27,12 @@ fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
     Ok(())
 }
 
-fn run_file(path: &str) -> io::Result<()> {
+fn run_file(path: &str) -> Result<(), Error> {
     let source = fs::read_to_string(path)?;
     run(source)
 }
 
-fn run_prompt() -> io::Result<()> {
+fn run_prompt() -> Result<(), Error> {
     let stdin = io::stdin();
     for line in stdin.lock().lines() {
         run(line?); // Ignore error.
@@ -40,14 +41,14 @@ fn run_prompt() -> io::Result<()> {
     Ok(())
 }
 
-fn run(source: String) -> io::Result<()> {
+fn run(source: String) -> Result<(), Error> {
     let mut scanner = Scanner::new(source);
     let tokens = scanner.scan_tokens();
 
     let mut parser = Parser::new(tokens);
     if let Some(expression) = parser.parse() {
         let printer = AstPrinter;
-        println!("{}", printer.print(expression));
+        println!("{}", printer.print(expression)?);
     }
     Ok(())
 }
