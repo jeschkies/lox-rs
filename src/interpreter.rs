@@ -27,6 +27,15 @@ impl Object {
 pub struct Interpreter;
 
 impl Interpreter {
+
+    fn interpret(&self, expression: &Expr) {
+        match self.evaluate(expression) {
+            Ok(value) => println!("{}", self.stringify(value)),
+            Err(_) => unimplemented!(),
+//            Err(e: Error::Runtime) => runtime_error(e),
+        }
+    }
+
     fn evaluate(&self, expression: &Expr) -> Result<Object, Error> {
         expression.accept(self)
     }
@@ -41,6 +50,15 @@ impl Interpreter {
 
     fn is_equal(&self, left: &Object, right: &Object) -> bool {
         left.equals(right)
+    }
+
+    fn stringify(&self, object: Object) -> String {
+        match object {
+            Object::Null => "nil".to_string(),
+            Object::Number(n) => n.to_string(),
+            Object::Boolean(b) => b.to_string(),
+            Object::String(s) => s,
+        }
     }
 
     /// Equivalent to checkNumberOperands
