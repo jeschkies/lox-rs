@@ -232,6 +232,6 @@ mod tests {
         let expression = parser.parse().expect("Could not parse sample code.");
         let printer = AstPrinter;
 
-        assert_eq!(printer.print(expression), "(* (- 123) 45.67)");
+        assert_eq!(printer.print(expression).unwrap(), "(* (- 123) 45.67)");
     }
 }
