@@ -1,5 +1,6 @@
 use crate::error::Error;
-use crate::syntax::{Expr, LiteralValue, Visitor};
+use crate::syntax::expr::Visitor;
+use crate::syntax::{Expr, LiteralValue};
 use crate::token::{Token, TokenType};
 
 /// A simple representation of an Lox object akin to a Java `Object`.

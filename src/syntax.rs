@@ -38,21 +38,8 @@ impl fmt::Display for LiteralValue {
     }
 }
 
-pub trait Visitor<R> {
-    fn visit_binary_expr(&self, left: &Expr, operator: &Token, right: &Expr) -> Result<R, Error>;
-
-    /// Visit a grouping expression.
-    ///
-    /// # Arguments
-    ///
-    /// * `expression` - This is the *inner* expression of the grouping.
-    fn visit_grouping_expr(&self, expression: &Expr) -> Result<R, Error>;
-    fn visit_literal_expr(&self, value: &LiteralValue) -> Result<R, Error>;
-    fn visit_unary_expr(&self, operator: &Token, right: &Expr) -> Result<R, Error>;
-}
-
 impl Expr {
-    pub fn accept<R>(&self, visitor: &Visitor<R>) -> Result<R, Error> {
+    pub fn accept<R>(&self, visitor: &expr::Visitor<R>) -> Result<R, Error> {
         match self {
             Expr::Binary {
                 left,
@@ -63,6 +50,50 @@ impl Expr {
             Expr::Literal { value } => visitor.visit_literal_expr(value),
             Expr::Unary { operator, right } => visitor.visit_unary_expr(operator, right),
         }
+    }
+}
+
+pub mod expr {
+    use super::{Expr, LiteralValue};
+    use crate::error::Error;
+    use crate::token::Token;
+
+    pub trait Visitor<R> {
+        fn visit_binary_expr(
+            &self,
+            left: &Expr,
+            operator: &Token,
+            right: &Expr,
+        ) -> Result<R, Error>;
+
+        /// Visit a grouping expression.
+        ///
+        /// # Arguments
+        ///
+        /// * `expression` - This is the *inner* expression of the grouping.
+        fn visit_grouping_expr(&self, expression: &Expr) -> Result<R, Error>;
+        fn visit_literal_expr(&self, value: &LiteralValue) -> Result<R, Error>;
+        fn visit_unary_expr(&self, operator: &Token, right: &Expr) -> Result<R, Error>;
+    }
+}
+
+pub enum Stmt {
+    Block { statements: Vec<Stmt> },
+}
+
+impl Stmt {
+    pub fn accept<R>(&self, visitor: &stmt::Visitor<R>) -> Result<R, Error> {
+        match self {
+            Stmt::Block { statements } => visitor.visit_block(statements),
+        }
+    }
+}
+
+mod stmt {
+    use crate::error::Error;
+
+    pub trait Visitor<R> {
+        fn visit_block(&self, statements: &Vec<super::Stmt>) -> Result<R, Error>;
     }
 }
 
@@ -86,7 +117,7 @@ impl AstPrinter {
     }
 }
 
-impl Visitor<String> for AstPrinter {
+impl expr::Visitor<String> for AstPrinter {
     fn visit_binary_expr(
         &self,
         left: &Expr,
