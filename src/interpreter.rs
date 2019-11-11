@@ -27,13 +27,8 @@ impl Object {
 pub struct Interpreter;
 
 impl Interpreter {
-
-    fn interpret(&self, expression: &Expr) {
-        match self.evaluate(expression) {
-            Ok(value) => println!("{}", self.stringify(value)),
-            Err(_) => unimplemented!(),
-//            Err(e: Error::Runtime) => runtime_error(e),
-        }
+    pub fn interpret(&self, expression: &Expr) -> Result<String, Error> {
+        self.evaluate(expression).map(|value| self.stringify(value))
     }
 
     fn evaluate(&self, expression: &Expr) -> Result<Object, Error> {
