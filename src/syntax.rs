@@ -79,21 +79,37 @@ pub mod expr {
 
 pub enum Stmt {
     Block { statements: Vec<Stmt> },
+    Expression { expression: Expr },
+    Print { expression: Expr },
+    Var { name: Token, initializer: Expr },
 }
 
 impl Stmt {
     pub fn accept<R>(&self, visitor: &stmt::Visitor<R>) -> Result<R, Error> {
         match self {
-            Stmt::Block { statements } => visitor.visit_block(statements),
+            Stmt::Block { statements } => visitor.visit_block_stmt(statements),
+            Stmt::Expression { expression } => visitor.visit_expression_stmt(expression),
+            Stmt::Print { expression } => visitor.visit_print_stmt(expression),
+            Stmt::Var { name, initializer } => visitor.visit_var_stmt(name, initializer),
         }
     }
 }
 
 mod stmt {
+    use super::{Expr, Stmt};
     use crate::error::Error;
+    use crate::token::Token;
 
     pub trait Visitor<R> {
-        fn visit_block(&self, statements: &Vec<super::Stmt>) -> Result<R, Error>;
+        fn visit_block_stmt(&self, statements: &Vec<Stmt>) -> Result<R, Error>;
+        //        fn visit_class_stmt(&self, Class stmt); TODO: Classes chapter
+        fn visit_expression_stmt(&self, expression: &Expr) -> Result<R, Error>;
+        //        fn visit_function_stmt(&self, Function stmt); TODO: Functions chapter
+        //        fn visit_if_stmt(&self, If stmt); TODO: Control Flows chapter
+        fn visit_print_stmt(&self, expression: &Expr) -> Result<R, Error>;
+        //        fn visit_return_stmt(&self, Return stmt); TODO: Functions chapter
+        fn visit_var_stmt(&self, name: &Token, initializer: &Expr) -> Result<R, Error>;
+        //        fn visit_while_stmt(&self, While stmt); TODO: Control Flows chapter
     }
 }
 
