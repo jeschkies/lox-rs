@@ -95,7 +95,7 @@ impl Stmt {
     }
 }
 
-mod stmt {
+pub mod stmt {
     use super::{Expr, Stmt};
     use crate::error::Error;
     use crate::token::Token;

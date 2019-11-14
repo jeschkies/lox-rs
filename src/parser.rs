@@ -1,5 +1,5 @@
 use crate::error::{parser_error, Error};
-use crate::syntax::{Expr, LiteralValue};
+use crate::syntax::{Expr, LiteralValue, Stmt};
 use crate::token::{Token, TokenType};
 
 pub struct Parser<'t> {
@@ -26,12 +26,36 @@ impl<'t> Parser<'t> {
         Parser { tokens, current: 0 }
     }
 
-    pub fn parse(&mut self) -> Option<Expr> {
-        self.expression().ok()
+    pub fn parse(&mut self) -> Result<Vec<Stmt>, Error> {
+        let mut statments: Vec<Stmt> = Vec::new();
+        while !self.is_at_end() {
+            statments.push(self.statement()?);
+        }
+        Ok(statments)
     }
 
     fn expression(&mut self) -> Result<Expr, Error> {
         self.equality()
+    }
+
+    fn statement(&mut self) -> Result<Stmt, Error> {
+        if matches!(self, TokenType::Print) {
+            self.print_statement()
+        } else {
+            self.expression_statement()
+        }
+    }
+
+    fn print_statement(&mut self) -> Result<Stmt, Error> {
+        let value = self.expression()?;
+        self.consume(TokenType::Semicolon, "Expect ';' after value.")?;
+        Ok(Stmt::Print { expression: value })
+    }
+
+    fn expression_statement(&mut self) -> Result<Stmt, Error> {
+        let expr = self.expression()?;
+        self.consume(TokenType::Semicolon, "Expect ';' after expression.")?;
+        Ok(Stmt::Expression { expression: expr })
     }
 
     fn equality(&mut self) -> Result<Expr, Error> {

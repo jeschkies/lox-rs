@@ -1,6 +1,6 @@
 use crate::error::Error;
-use crate::syntax::expr::Visitor;
-use crate::syntax::{Expr, LiteralValue};
+use crate::syntax::{expr, stmt};
+use crate::syntax::{Expr, LiteralValue, Stmt};
 use crate::token::{Token, TokenType};
 
 /// A simple representation of an Lox object akin to a Java `Object`.
@@ -28,12 +28,19 @@ impl Object {
 pub struct Interpreter;
 
 impl Interpreter {
-    pub fn interpret(&self, expression: &Expr) -> Result<String, Error> {
-        self.evaluate(expression).map(|value| self.stringify(value))
+    pub fn interpret(&self, statements: &Vec<Stmt>) -> Result<(), Error> {
+        for statement in statements {
+            self.execute(statement)?;
+        }
+        Ok(())
     }
 
     fn evaluate(&self, expression: &Expr) -> Result<Object, Error> {
         expression.accept(self)
+    }
+
+    fn execute(&self, statement: &Stmt) -> Result<(), Error> {
+        statement.accept(self)
     }
 
     fn is_truthy(&self, object: &Object) -> bool {
@@ -66,7 +73,7 @@ impl Interpreter {
     }
 }
 
-impl Visitor<Object> for Interpreter {
+impl expr::Visitor<Object> for Interpreter {
     fn visit_binary_expr(
         &self,
         left: &Expr,
@@ -161,5 +168,26 @@ impl Visitor<Object> for Interpreter {
             TokenType::Bang => Ok(Object::Boolean(!self.is_truthy(&right))), // TODO: is_truthy could simply return an Object.
             _ => unreachable!(), // TODO: fail if right is not a number.
         }
+    }
+}
+
+impl stmt::Visitor<()> for Interpreter {
+    fn visit_block_stmt(&self, statements: &Vec<Stmt>) -> Result<(), Error> {
+        unimplemented!()
+    }
+
+    fn visit_expression_stmt(&self, expression: &Expr) -> Result<(), Error> {
+        self.evaluate(expression)?;
+        Ok(())
+    }
+
+    fn visit_print_stmt(&self, expression: &Expr) -> Result<(), Error> {
+        let value = self.evaluate(expression)?;
+        println!("{}", self.stringify(value));
+        Ok(())
+    }
+
+    fn visit_var_stmt(&self, name: &Token, initializer: &Expr) -> Result<(), Error> {
+        unimplemented!()
     }
 }
