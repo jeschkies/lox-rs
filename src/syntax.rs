@@ -18,6 +18,9 @@ pub enum Expr {
         operator: Token,
         right: Box<Expr>,
     },
+    Variable {
+        name: Token,
+    },
 }
 
 pub enum LiteralValue {
@@ -49,6 +52,7 @@ impl Expr {
             Expr::Grouping { expression } => visitor.visit_grouping_expr(expression),
             Expr::Literal { value } => visitor.visit_literal_expr(value),
             Expr::Unary { operator, right } => visitor.visit_unary_expr(operator, right),
+            Expr::Variable { name } => visitor.visit_variable_expr(name),
         }
     }
 }
@@ -74,14 +78,24 @@ pub mod expr {
         fn visit_grouping_expr(&self, expression: &Expr) -> Result<R, Error>;
         fn visit_literal_expr(&self, value: &LiteralValue) -> Result<R, Error>;
         fn visit_unary_expr(&self, operator: &Token, right: &Expr) -> Result<R, Error>;
+        fn visit_variable_expr(&self, name: &Token) -> Result<R, Error>;
     }
 }
 
 pub enum Stmt {
-    Block { statements: Vec<Stmt> },
-    Expression { expression: Expr },
-    Print { expression: Expr },
-    Var { name: Token, initializer: Expr },
+    Block {
+        statements: Vec<Stmt>,
+    },
+    Expression {
+        expression: Expr,
+    },
+    Print {
+        expression: Expr,
+    },
+    Var {
+        name: Token,
+        initializer: Option<Expr>,
+    },
 }
 
 impl Stmt {
@@ -108,7 +122,7 @@ pub mod stmt {
         //        fn visit_if_stmt(&self, If stmt); TODO: Control Flows chapter
         fn visit_print_stmt(&self, expression: &Expr) -> Result<R, Error>;
         //        fn visit_return_stmt(&self, Return stmt); TODO: Functions chapter
-        fn visit_var_stmt(&self, name: &Token, initializer: &Expr) -> Result<R, Error>;
+        fn visit_var_stmt(&self, name: &Token, initializer: &Option<Expr>) -> Result<R, Error>;
         //        fn visit_while_stmt(&self, While stmt); TODO: Control Flows chapter
     }
 }
@@ -153,6 +167,10 @@ impl expr::Visitor<String> for AstPrinter {
 
     fn visit_unary_expr(&self, operator: &Token, right: &Expr) -> Result<String, Error> {
         self.parenthesize(operator.lexeme.clone(), vec![right])
+    }
+
+    fn visit_variable_expr(&self, name: &Token) -> Result<String, Error> {
+        Ok(name.lexeme.clone())
     }
 }
 
