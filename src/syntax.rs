@@ -2,6 +2,7 @@ use crate::error::Error;
 use crate::token::Token;
 use std::fmt;
 
+#[derive(Debug, Clone)]
 pub enum Expr {
     Binary {
         left: Box<Expr>,
@@ -23,6 +24,7 @@ pub enum Expr {
     },
 }
 
+#[derive(Debug, Clone)]
 pub enum LiteralValue {
     Boolean(bool),
     Null,
@@ -38,6 +40,12 @@ impl fmt::Display for LiteralValue {
             LiteralValue::Number(n) => write!(f, "{}", n),
             LiteralValue::String(s) => write!(f, "{}", s),
         }
+    }
+}
+
+impl fmt::Display for Expr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
     }
 }
 
@@ -96,15 +104,17 @@ pub enum Stmt {
         name: Token,
         initializer: Option<Expr>,
     },
+    Null, // TODO see how stmt is handled after synchronize
 }
 
 impl Stmt {
-    pub fn accept<R>(&self, visitor: &stmt::Visitor<R>) -> Result<R, Error> {
+    pub fn accept<R>(&self, visitor: &mut stmt::Visitor<R>) -> Result<R, Error> {
         match self {
             Stmt::Block { statements } => visitor.visit_block_stmt(statements),
             Stmt::Expression { expression } => visitor.visit_expression_stmt(expression),
             Stmt::Print { expression } => visitor.visit_print_stmt(expression),
             Stmt::Var { name, initializer } => visitor.visit_var_stmt(name, initializer),
+            Stmt::Null => unimplemented!(),
         }
     }
 }
@@ -122,7 +132,7 @@ pub mod stmt {
         //        fn visit_if_stmt(&self, If stmt); TODO: Control Flows chapter
         fn visit_print_stmt(&self, expression: &Expr) -> Result<R, Error>;
         //        fn visit_return_stmt(&self, Return stmt); TODO: Functions chapter
-        fn visit_var_stmt(&self, name: &Token, initializer: &Option<Expr>) -> Result<R, Error>;
+        fn visit_var_stmt(&mut self, name: &Token, initializer: &Option<Expr>) -> Result<R, Error>;
         //        fn visit_while_stmt(&self, While stmt); TODO: Control Flows chapter
     }
 }

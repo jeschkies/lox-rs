@@ -46,11 +46,11 @@ impl<'t> Parser<'t> {
         };
 
         match statement {
-            Ok(statement) => Ok(statement),
             Err(Error::Parse) => {
                 self.synchronize();
                 Ok(Stmt::Null)
-            }
+            },
+            other => other
         }
     }
 
@@ -257,10 +257,9 @@ impl<'t> Parser<'t> {
             TokenType::Number { literal } => Expr::Literal {
                 value: LiteralValue::Number(literal.clone()),
             },
-            TokenType::Identifier => {
-                Expr::Variable { name: self.previous().clone() }
-                
-            }
+            TokenType::Identifier => Expr::Variable {
+                name: self.peek().clone(),
+            },
             TokenType::LeftParen => {
                 let expr = self.expression()?;
                 self.consume(TokenType::RightParen, "Expected ')' after expression.")?;

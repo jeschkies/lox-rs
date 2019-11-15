@@ -1,34 +1,22 @@
+use crate::env::Environment;
 use crate::error::Error;
+use crate::object::Object;
 use crate::syntax::{expr, stmt};
 use crate::syntax::{Expr, LiteralValue, Stmt};
 use crate::token::{Token, TokenType};
 
-/// A simple representation of an Lox object akin to a Java `Object`.
-enum Object {
-    Boolean(bool),
-    Null,
-    Number(f64),
-    String(String),
+pub struct Interpreter {
+    environment: Environment,
 }
-
-impl Object {
-    fn equals(&self, other: &Object) -> bool {
-        match (self, other) {
-            (Object::Null, Object::Null) => true,
-            (_, Object::Null) => false,
-            (Object::Null, _) => false,
-            (Object::Boolean(left), Object::Boolean(right)) => left == right,
-            (Object::Number(left), Object::Number(right)) => left == right,
-            (Object::String(left), Object::String(right)) => left.eq(right),
-            _ => false,
-        }
-    }
-}
-
-pub struct Interpreter;
 
 impl Interpreter {
-    pub fn interpret(&self, statements: &Vec<Stmt>) -> Result<(), Error> {
+    pub fn new() -> Self {
+        Interpreter {
+            environment: Environment::new(),
+        }
+    }
+
+    pub fn interpret(&mut self, statements: &Vec<Stmt>) -> Result<(), Error> {
         for statement in statements {
             self.execute(statement)?;
         }
@@ -39,7 +27,7 @@ impl Interpreter {
         expression.accept(self)
     }
 
-    fn execute(&self, statement: &Stmt) -> Result<(), Error> {
+    fn execute(&mut self, statement: &Stmt) -> Result<(), Error> {
         statement.accept(self)
     }
 
@@ -169,6 +157,10 @@ impl expr::Visitor<Object> for Interpreter {
             _ => unreachable!(), // TODO: fail if right is not a number.
         }
     }
+
+    fn visit_variable_expr(&self, name: &Token) -> Result<Object, Error> {
+        self.environment.get(name)
+    }
 }
 
 impl stmt::Visitor<()> for Interpreter {
@@ -183,11 +175,15 @@ impl stmt::Visitor<()> for Interpreter {
 
     fn visit_print_stmt(&self, expression: &Expr) -> Result<(), Error> {
         let value = self.evaluate(expression)?;
-        println!("{}", self.stringify(value));
         Ok(())
     }
 
-    fn visit_var_stmt(&self, name: &Token, initializer: &Expr) -> Result<(), Error> {
-        unimplemented!()
+    fn visit_var_stmt(&mut self, name: &Token, initializer: &Option<Expr>) -> Result<(), Error> {
+        let value: Object = initializer.as_ref()
+            .map(|i| self.evaluate(i))
+            .unwrap_or(Ok(Object::Null))?;
+
+        self.environment.define(name.lexeme.clone(), value);
+        Ok(())
     }
 }
