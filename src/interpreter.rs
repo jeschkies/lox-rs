@@ -23,7 +23,7 @@ impl Interpreter {
         Ok(())
     }
 
-    fn evaluate(&self, expression: &Expr) -> Result<Object, Error> {
+    fn evaluate(&mut self, expression: &Expr) -> Result<Object, Error> {
         expression.accept(self)
     }
 
@@ -63,7 +63,7 @@ impl Interpreter {
 
 impl expr::Visitor<Object> for Interpreter {
     fn visit_binary_expr(
-        &self,
+        &mut self,
         left: &Expr,
         operator: &Token,
         right: &Expr,
@@ -132,7 +132,7 @@ impl expr::Visitor<Object> for Interpreter {
         }
     }
 
-    fn visit_grouping_expr(&self, expr: &Expr) -> Result<Object, Error> {
+    fn visit_grouping_expr(&mut self, expr: &Expr) -> Result<Object, Error> {
         self.evaluate(expr)
     }
 
@@ -145,7 +145,7 @@ impl expr::Visitor<Object> for Interpreter {
         }
     }
 
-    fn visit_unary_expr(&self, operator: &Token, right: &Expr) -> Result<Object, Error> {
+    fn visit_unary_expr(&mut self, operator: &Token, right: &Expr) -> Result<Object, Error> {
         let right = self.evaluate(right)?;
 
         match &operator.tpe {
@@ -158,28 +158,36 @@ impl expr::Visitor<Object> for Interpreter {
         }
     }
 
-    fn visit_variable_expr(&self, name: &Token) -> Result<Object, Error> {
+    fn visit_variable_expr(&mut self, name: &Token) -> Result<Object, Error> {
         self.environment.get(name)
+    }
+
+    fn visit_assign_expr(&mut self, name: &Token, value: &Expr) -> Result<Object, Error> {
+        let v = self.evaluate(value)?;
+        self.environment.assign(name, v.clone())?;
+        Ok(v)
     }
 }
 
 impl stmt::Visitor<()> for Interpreter {
-    fn visit_block_stmt(&self, statements: &Vec<Stmt>) -> Result<(), Error> {
+    fn visit_block_stmt(&mut self, statements: &Vec<Stmt>) -> Result<(), Error> {
         unimplemented!()
     }
 
-    fn visit_expression_stmt(&self, expression: &Expr) -> Result<(), Error> {
+    fn visit_expression_stmt(&mut self, expression: &Expr) -> Result<(), Error> {
         self.evaluate(expression)?;
         Ok(())
     }
 
-    fn visit_print_stmt(&self, expression: &Expr) -> Result<(), Error> {
+    fn visit_print_stmt(&mut self, expression: &Expr) -> Result<(), Error> {
         let value = self.evaluate(expression)?;
+        println!("{}", self.stringify(value));
         Ok(())
     }
 
     fn visit_var_stmt(&mut self, name: &Token, initializer: &Option<Expr>) -> Result<(), Error> {
-        let value: Object = initializer.as_ref()
+        let value: Object = initializer
+            .as_ref()
             .map(|i| self.evaluate(i))
             .unwrap_or(Ok(Object::Null))?;
 

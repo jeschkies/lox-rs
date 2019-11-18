@@ -35,7 +35,7 @@ impl<'t> Parser<'t> {
     }
 
     fn expression(&mut self) -> Result<Expr, Error> {
-        self.equality()
+        self.assignment()
     }
 
     fn declaration(&mut self) -> Result<Stmt, Error> {
@@ -49,8 +49,8 @@ impl<'t> Parser<'t> {
             Err(Error::Parse) => {
                 self.synchronize();
                 Ok(Stmt::Null)
-            },
-            other => other
+            }
+            other => other,
         }
     }
 
@@ -88,6 +88,25 @@ impl<'t> Parser<'t> {
         let expr = self.expression()?;
         self.consume(TokenType::Semicolon, "Expect ';' after expression.")?;
         Ok(Stmt::Expression { expression: expr })
+    }
+
+    fn assignment(&mut self) -> Result<Expr, Error> {
+        let expr = self.equality()?;
+
+        if matches!(self, TokenType::Equal) {
+            let value = Box::new(self.assignment()?);
+
+            if let Expr::Variable { name } = expr {
+                return Ok(Expr::Assign { name, value });
+            }
+
+            // We are just reporting the error but not return them.
+            // See note in http://craftinginterpreters.com/statements-and-state.html#assignment-syntax.
+            let equals = self.previous();
+            self.error(equals, "Invalid assignment target.");
+        }
+
+        Ok(expr)
     }
 
     fn equality(&mut self) -> Result<Expr, Error> {

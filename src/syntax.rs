@@ -4,6 +4,10 @@ use std::fmt;
 
 #[derive(Debug, Clone)]
 pub enum Expr {
+    Assign {
+        name: Token,
+        value: Box<Expr>,
+    },
     Binary {
         left: Box<Expr>,
         operator: Token,
@@ -50,8 +54,9 @@ impl fmt::Display for Expr {
 }
 
 impl Expr {
-    pub fn accept<R>(&self, visitor: &expr::Visitor<R>) -> Result<R, Error> {
+    pub fn accept<R>(&self, visitor: &mut expr::Visitor<R>) -> Result<R, Error> {
         match self {
+            Expr::Assign { name, value } => visitor.visit_assign_expr(name, value),
             Expr::Binary {
                 left,
                 operator,
@@ -71,8 +76,9 @@ pub mod expr {
     use crate::token::Token;
 
     pub trait Visitor<R> {
+        fn visit_assign_expr(&mut self, name: &Token, value: &Expr) -> Result<R, Error>;
         fn visit_binary_expr(
-            &self,
+            &mut self,
             left: &Expr,
             operator: &Token,
             right: &Expr,
@@ -83,10 +89,10 @@ pub mod expr {
         /// # Arguments
         ///
         /// * `expression` - This is the *inner* expression of the grouping.
-        fn visit_grouping_expr(&self, expression: &Expr) -> Result<R, Error>;
+        fn visit_grouping_expr(&mut self, expression: &Expr) -> Result<R, Error>;
         fn visit_literal_expr(&self, value: &LiteralValue) -> Result<R, Error>;
-        fn visit_unary_expr(&self, operator: &Token, right: &Expr) -> Result<R, Error>;
-        fn visit_variable_expr(&self, name: &Token) -> Result<R, Error>;
+        fn visit_unary_expr(&mut self, operator: &Token, right: &Expr) -> Result<R, Error>;
+        fn visit_variable_expr(&mut self, name: &Token) -> Result<R, Error>;
     }
 }
 
@@ -125,12 +131,12 @@ pub mod stmt {
     use crate::token::Token;
 
     pub trait Visitor<R> {
-        fn visit_block_stmt(&self, statements: &Vec<Stmt>) -> Result<R, Error>;
+        fn visit_block_stmt(&mut self, statements: &Vec<Stmt>) -> Result<R, Error>;
         //        fn visit_class_stmt(&self, Class stmt); TODO: Classes chapter
-        fn visit_expression_stmt(&self, expression: &Expr) -> Result<R, Error>;
+        fn visit_expression_stmt(&mut self, expression: &Expr) -> Result<R, Error>;
         //        fn visit_function_stmt(&self, Function stmt); TODO: Functions chapter
         //        fn visit_if_stmt(&self, If stmt); TODO: Control Flows chapter
-        fn visit_print_stmt(&self, expression: &Expr) -> Result<R, Error>;
+        fn visit_print_stmt(&mut self, expression: &Expr) -> Result<R, Error>;
         //        fn visit_return_stmt(&self, Return stmt); TODO: Functions chapter
         fn visit_var_stmt(&mut self, name: &Token, initializer: &Option<Expr>) -> Result<R, Error>;
         //        fn visit_while_stmt(&self, While stmt); TODO: Control Flows chapter
@@ -140,11 +146,11 @@ pub mod stmt {
 pub struct AstPrinter;
 
 impl AstPrinter {
-    pub fn print(&self, expr: Expr) -> Result<String, Error> {
+    pub fn print(&mut self, expr: Expr) -> Result<String, Error> {
         expr.accept(self)
     }
 
-    fn parenthesize(&self, name: String, exprs: Vec<&Expr>) -> Result<String, Error> {
+    fn parenthesize(&mut self, name: String, exprs: Vec<&Expr>) -> Result<String, Error> {
         let mut r = String::new();
         r.push_str("(");
         r.push_str(&name);
@@ -159,7 +165,7 @@ impl AstPrinter {
 
 impl expr::Visitor<String> for AstPrinter {
     fn visit_binary_expr(
-        &self,
+        &mut self,
         left: &Expr,
         operator: &Token,
         right: &Expr,
@@ -167,7 +173,7 @@ impl expr::Visitor<String> for AstPrinter {
         self.parenthesize(operator.lexeme.clone(), vec![left, right])
     }
 
-    fn visit_grouping_expr(&self, expr: &Expr) -> Result<String, Error> {
+    fn visit_grouping_expr(&mut self, expr: &Expr) -> Result<String, Error> {
         self.parenthesize("group".to_string(), vec![expr])
     }
 
@@ -175,12 +181,16 @@ impl expr::Visitor<String> for AstPrinter {
         Ok(value.to_string()) // check for null
     }
 
-    fn visit_unary_expr(&self, operator: &Token, right: &Expr) -> Result<String, Error> {
+    fn visit_unary_expr(&mut self, operator: &Token, right: &Expr) -> Result<String, Error> {
         self.parenthesize(operator.lexeme.clone(), vec![right])
     }
 
-    fn visit_variable_expr(&self, name: &Token) -> Result<String, Error> {
+    fn visit_variable_expr(&mut self, name: &Token) -> Result<String, Error> {
         Ok(name.lexeme.clone())
+    }
+
+    fn visit_assign_expr(&mut self, name: &Token, value: &Expr) -> Result<String, Error> {
+        self.parenthesize(name.lexeme.clone(), vec![value])
     }
 }
 
@@ -205,7 +215,7 @@ mod tests {
                 }),
             }),
         };
-        let printer = AstPrinter;
+        let mut printer = AstPrinter;
 
         assert_eq!(
             printer.print(expression).unwrap(),
