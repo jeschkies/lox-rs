@@ -5,14 +5,17 @@ use crate::syntax::{expr, stmt};
 use crate::syntax::{Expr, LiteralValue, Stmt};
 use crate::token::{Token, TokenType};
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 pub struct Interpreter {
-    environment: Environment,
+    environment: Rc<RefCell<Environment>>,
 }
 
 impl Interpreter {
     pub fn new() -> Self {
         Interpreter {
-            environment: Environment::new(),
+            environment: Rc::new(RefCell::new(Environment::new())),
         }
     }
 
@@ -29,6 +32,24 @@ impl Interpreter {
 
     fn execute(&mut self, statement: &Stmt) -> Result<(), Error> {
         statement.accept(self)
+    }
+
+    fn execute_block(
+        &mut self,
+        statements: &Vec<Stmt>,
+        environment: Rc<RefCell<Environment>>,
+    ) -> Result<(), Error> {
+        let previous = self.environment.clone();
+        let steps = || -> Result<(), Error> {
+            self.environment = environment;
+            for statement in statements {
+                self.execute(statement)?
+            }
+            Ok(())
+        };
+        let result = steps();
+        self.environment = previous;
+        result
     }
 
     fn is_truthy(&self, object: &Object) -> bool {
@@ -159,19 +180,23 @@ impl expr::Visitor<Object> for Interpreter {
     }
 
     fn visit_variable_expr(&mut self, name: &Token) -> Result<Object, Error> {
-        self.environment.get(name)
+        self.environment.borrow().get(name)
     }
 
     fn visit_assign_expr(&mut self, name: &Token, value: &Expr) -> Result<Object, Error> {
         let v = self.evaluate(value)?;
-        self.environment.assign(name, v.clone())?;
+        self.environment.borrow_mut().assign(name, v.clone())?;
         Ok(v)
     }
 }
 
 impl stmt::Visitor<()> for Interpreter {
     fn visit_block_stmt(&mut self, statements: &Vec<Stmt>) -> Result<(), Error> {
-        unimplemented!()
+        self.execute_block(
+            statements,
+            Rc::new(RefCell::new(Environment::from(&self.environment))),
+        );
+        Ok(())
     }
 
     fn visit_expression_stmt(&mut self, expression: &Expr) -> Result<(), Error> {
@@ -191,7 +216,7 @@ impl stmt::Visitor<()> for Interpreter {
             .map(|i| self.evaluate(i))
             .unwrap_or(Ok(Object::Null))?;
 
-        self.environment.define(name.lexeme.clone(), value);
+        self.environment.borrow_mut().define(name.lexeme.clone(), value);
         Ok(())
     }
 }

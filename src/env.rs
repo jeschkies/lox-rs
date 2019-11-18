@@ -2,11 +2,13 @@ use crate::error::Error;
 use crate::object::Object;
 use crate::token::Token;
 
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt;
+use std::rc::Rc;
 
 pub struct Environment {
-    enclosing: Option<Box<Environment>>,
+    enclosing: Option<Rc<RefCell<Environment>>>, // Parent
     values: HashMap<String, Object>,
 }
 
@@ -18,9 +20,9 @@ impl Environment {
         }
     }
 
-    pub fn from(enclosing: Environment) -> Self {
+    pub fn from(enclosing: &Rc<RefCell<Environment>>) -> Self {
         Environment {
-            enclosing: Some(Box::new(enclosing)),
+            enclosing: Some(Rc::clone(enclosing)),
             values: HashMap::new(),
         }
     }
@@ -35,7 +37,7 @@ impl Environment {
             Ok((*value).clone())
         } else {
             if let Some(ref enclosing) = self.enclosing {
-                enclosing.get(name)
+                enclosing.borrow().get(name)
             } else {
                 Err(Error::Runtime {
                     token: name.clone(),
@@ -51,8 +53,8 @@ impl Environment {
             self.values.insert(name.lexeme.clone(), value);
             Ok(())
         } else {
-            if let Some(ref mut enclosing) = self.enclosing {
-                enclosing.assign(name, value)
+            if let Some(ref enclosing) = self.enclosing {
+                enclosing.borrow_mut().assign(name, value)
             } else {
                 Err(Error::Runtime {
                     token: name.clone(),
