@@ -80,7 +80,7 @@ impl<'t> Parser<'t> {
         self.consume(
             TokenType::Semicolon,
             "Expect ';' after variable declaration.",
-        );
+        )?;
         Ok(Stmt::Var { name, initializer })
     }
 

@@ -6,12 +6,21 @@ use std::collections::HashMap;
 use std::fmt;
 
 pub struct Environment {
+    enclosing: Option<Box<Environment>>,
     values: HashMap<String, Object>,
 }
 
 impl Environment {
     pub fn new() -> Self {
         Environment {
+            enclosing: None,
+            values: HashMap::new(),
+        }
+    }
+
+    pub fn from(enclosing: Environment) -> Self {
+        Environment {
+            enclosing: Some(Box::new(enclosing)),
             values: HashMap::new(),
         }
     }
@@ -25,10 +34,14 @@ impl Environment {
         if let Some(value) = self.values.get(key) {
             Ok((*value).clone())
         } else {
-            Err(Error::Runtime {
-                token: name.clone(),
-                message: format!("Undefined variable '{}'.", key),
-            })
+            if let Some(ref enclosing) = self.enclosing {
+                enclosing.get(name)
+            } else {
+                Err(Error::Runtime {
+                    token: name.clone(),
+                    message: format!("Undefined variable '{}'.", key),
+                })
+            }
         }
     }
 
@@ -38,10 +51,14 @@ impl Environment {
             self.values.insert(name.lexeme.clone(), value);
             Ok(())
         } else {
-            Err(Error::Runtime {
-                token: name.clone(),
-                message: format!("Undefined variable '{}'", key),
-            })
+            if let Some(ref mut enclosing) = self.enclosing {
+                enclosing.assign(name, value)
+            } else {
+                Err(Error::Runtime {
+                    token: name.clone(),
+                    message: format!("Undefined variable '{}'", key),
+                })
+            }
         }
     }
 }
