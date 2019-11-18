@@ -1,38 +1,55 @@
+use crate::env::Environment;
 use crate::error::Error;
-use crate::syntax::{Expr, LiteralValue, Visitor};
+use crate::object::Object;
+use crate::syntax::{expr, stmt};
+use crate::syntax::{Expr, LiteralValue, Stmt};
 use crate::token::{Token, TokenType};
 
-/// A simple representation of an Lox object akin to a Java `Object`.
-enum Object {
-    Boolean(bool),
-    Null,
-    Number(f64),
-    String(String),
-}
+use std::cell::RefCell;
+use std::rc::Rc;
 
-impl Object {
-    fn equals(&self, other: &Object) -> bool {
-        match (self, other) {
-            (Object::Null, Object::Null) => true,
-            (_, Object::Null) => false,
-            (Object::Null, _) => false,
-            (Object::Boolean(left), Object::Boolean(right)) => left == right,
-            (Object::Number(left), Object::Number(right)) => left == right,
-            (Object::String(left), Object::String(right)) => left.eq(right),
-            _ => false,
-        }
-    }
+pub struct Interpreter {
+    environment: Rc<RefCell<Environment>>,
 }
-
-pub struct Interpreter;
 
 impl Interpreter {
-    pub fn interpret(&self, expression: &Expr) -> Result<String, Error> {
-        self.evaluate(expression).map(|value| self.stringify(value))
+    pub fn new() -> Self {
+        Interpreter {
+            environment: Rc::new(RefCell::new(Environment::new())),
+        }
     }
 
-    fn evaluate(&self, expression: &Expr) -> Result<Object, Error> {
+    pub fn interpret(&mut self, statements: &Vec<Stmt>) -> Result<(), Error> {
+        for statement in statements {
+            self.execute(statement)?;
+        }
+        Ok(())
+    }
+
+    fn evaluate(&mut self, expression: &Expr) -> Result<Object, Error> {
         expression.accept(self)
+    }
+
+    fn execute(&mut self, statement: &Stmt) -> Result<(), Error> {
+        statement.accept(self)
+    }
+
+    fn execute_block(
+        &mut self,
+        statements: &Vec<Stmt>,
+        environment: Rc<RefCell<Environment>>,
+    ) -> Result<(), Error> {
+        let previous = self.environment.clone();
+        let steps = || -> Result<(), Error> {
+            self.environment = environment;
+            for statement in statements {
+                self.execute(statement)?
+            }
+            Ok(())
+        };
+        let result = steps();
+        self.environment = previous;
+        result
     }
 
     fn is_truthy(&self, object: &Object) -> bool {
@@ -65,9 +82,9 @@ impl Interpreter {
     }
 }
 
-impl Visitor<Object> for Interpreter {
+impl expr::Visitor<Object> for Interpreter {
     fn visit_binary_expr(
-        &self,
+        &mut self,
         left: &Expr,
         operator: &Token,
         right: &Expr,
@@ -136,7 +153,7 @@ impl Visitor<Object> for Interpreter {
         }
     }
 
-    fn visit_grouping_expr(&self, expr: &Expr) -> Result<Object, Error> {
+    fn visit_grouping_expr(&mut self, expr: &Expr) -> Result<Object, Error> {
         self.evaluate(expr)
     }
 
@@ -149,7 +166,7 @@ impl Visitor<Object> for Interpreter {
         }
     }
 
-    fn visit_unary_expr(&self, operator: &Token, right: &Expr) -> Result<Object, Error> {
+    fn visit_unary_expr(&mut self, operator: &Token, right: &Expr) -> Result<Object, Error> {
         let right = self.evaluate(right)?;
 
         match &operator.tpe {
@@ -160,5 +177,46 @@ impl Visitor<Object> for Interpreter {
             TokenType::Bang => Ok(Object::Boolean(!self.is_truthy(&right))), // TODO: is_truthy could simply return an Object.
             _ => unreachable!(), // TODO: fail if right is not a number.
         }
+    }
+
+    fn visit_variable_expr(&mut self, name: &Token) -> Result<Object, Error> {
+        self.environment.borrow().get(name)
+    }
+
+    fn visit_assign_expr(&mut self, name: &Token, value: &Expr) -> Result<Object, Error> {
+        let v = self.evaluate(value)?;
+        self.environment.borrow_mut().assign(name, v.clone())?;
+        Ok(v)
+    }
+}
+
+impl stmt::Visitor<()> for Interpreter {
+    fn visit_block_stmt(&mut self, statements: &Vec<Stmt>) -> Result<(), Error> {
+        self.execute_block(
+            statements,
+            Rc::new(RefCell::new(Environment::from(&self.environment))),
+        );
+        Ok(())
+    }
+
+    fn visit_expression_stmt(&mut self, expression: &Expr) -> Result<(), Error> {
+        self.evaluate(expression)?;
+        Ok(())
+    }
+
+    fn visit_print_stmt(&mut self, expression: &Expr) -> Result<(), Error> {
+        let value = self.evaluate(expression)?;
+        println!("{}", self.stringify(value));
+        Ok(())
+    }
+
+    fn visit_var_stmt(&mut self, name: &Token, initializer: &Option<Expr>) -> Result<(), Error> {
+        let value: Object = initializer
+            .as_ref()
+            .map(|i| self.evaluate(i))
+            .unwrap_or(Ok(Object::Null))?;
+
+        self.environment.borrow_mut().define(name.lexeme.clone(), value);
+        Ok(())
     }
 }

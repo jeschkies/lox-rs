@@ -1,5 +1,5 @@
 use crate::error::{parser_error, Error};
-use crate::syntax::{Expr, LiteralValue};
+use crate::syntax::{Expr, LiteralValue, Stmt};
 use crate::token::{Token, TokenType};
 
 pub struct Parser<'t> {
@@ -26,12 +26,102 @@ impl<'t> Parser<'t> {
         Parser { tokens, current: 0 }
     }
 
-    pub fn parse(&mut self) -> Option<Expr> {
-        self.expression().ok()
+    pub fn parse(&mut self) -> Result<Vec<Stmt>, Error> {
+        let mut statments: Vec<Stmt> = Vec::new();
+        while !self.is_at_end() {
+            statments.push(self.declaration()?);
+        }
+        Ok(statments)
     }
 
     fn expression(&mut self) -> Result<Expr, Error> {
-        self.equality()
+        self.assignment()
+    }
+
+    fn declaration(&mut self) -> Result<Stmt, Error> {
+        let statement = if matches!(self, TokenType::Var) {
+            self.var_declaration()
+        } else {
+            self.statement()
+        };
+
+        match statement {
+            Err(Error::Parse) => {
+                self.synchronize();
+                Ok(Stmt::Null)
+            }
+            other => other,
+        }
+    }
+
+    fn statement(&mut self) -> Result<Stmt, Error> {
+        if matches!(self, TokenType::Print) {
+            self.print_statement()
+        } else if matches!(self, TokenType::LeftBrace) {
+            Ok(Stmt::Block {
+                statements: self.block()?,
+            })
+        } else {
+            self.expression_statement()
+        }
+    }
+
+    fn print_statement(&mut self) -> Result<Stmt, Error> {
+        let value = self.expression()?;
+        self.consume(TokenType::Semicolon, "Expect ';' after value.")?;
+        Ok(Stmt::Print { expression: value })
+    }
+
+    fn var_declaration(&mut self) -> Result<Stmt, Error> {
+        let name = self.consume(TokenType::Identifier, "Expect variable name.")?;
+
+        let initializer = if matches!(self, TokenType::Equal) {
+            Some(self.expression()?)
+        } else {
+            None
+        };
+
+        self.consume(
+            TokenType::Semicolon,
+            "Expect ';' after variable declaration.",
+        )?;
+        Ok(Stmt::Var { name, initializer })
+    }
+
+    fn expression_statement(&mut self) -> Result<Stmt, Error> {
+        let expr = self.expression()?;
+        self.consume(TokenType::Semicolon, "Expect ';' after expression.")?;
+        Ok(Stmt::Expression { expression: expr })
+    }
+
+    fn block(&mut self) -> Result<Vec<Stmt>, Error> {
+        let mut statements: Vec<Stmt> = Vec::new();
+
+        while !self.check(TokenType::RightBrace) && !self.is_at_end() {
+            statements.push(self.declaration()?);
+        }
+
+        self.consume(TokenType::RightBrace, "Expect '}' after block.")?;
+        Ok(statements)
+    }
+
+    fn assignment(&mut self) -> Result<Expr, Error> {
+        let expr = self.equality()?;
+
+        if matches!(self, TokenType::Equal) {
+            let value = Box::new(self.assignment()?);
+
+            if let Expr::Variable { name } = expr {
+                return Ok(Expr::Assign { name, value });
+            }
+
+            // We are just reporting the error but not return them.
+            // See note in http://craftinginterpreters.com/statements-and-state.html#assignment-syntax.
+            let equals = self.previous();
+            self.error(equals, "Invalid assignment target.");
+        }
+
+        Ok(expr)
     }
 
     fn equality(&mut self) -> Result<Expr, Error> {
@@ -201,6 +291,9 @@ impl<'t> Parser<'t> {
             TokenType::Number { literal } => Expr::Literal {
                 value: LiteralValue::Number(literal.clone()),
             },
+            TokenType::Identifier => Expr::Variable {
+                name: self.peek().clone(),
+            },
             TokenType::LeftParen => {
                 let expr = self.expression()?;
                 self.consume(TokenType::RightParen, "Expected ')' after expression.")?;
@@ -229,9 +322,9 @@ mod tests {
         let tokens = scanner.scan_tokens();
 
         let mut parser = Parser::new(tokens);
-        let expression = parser.parse().expect("Could not parse sample code.");
+        let statements = parser.parse().expect("Could not parse sample code.");
         let printer = AstPrinter;
 
-        assert_eq!(printer.print(expression).unwrap(), "(* (- 123) 45.67)");
+        //        assert_eq!(printer.print(statements).unwrap(), "(* (- 123) 45.67)");
     }
 }

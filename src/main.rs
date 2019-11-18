@@ -1,13 +1,15 @@
+mod env;
 mod error;
 mod interpreter;
+mod object;
 mod parser;
 mod scanner;
 mod syntax;
 mod token;
 
+use std::fs;
 use std::io::{self, BufRead};
 use std::process::exit;
-use std::{env, fs};
 
 use error::Error;
 use interpreter::Interpreter;
@@ -22,16 +24,16 @@ struct Lox {
 impl Lox {
     fn new() -> Self {
         Lox {
-            interpreter: Interpreter,
+            interpreter: Interpreter::new(),
         }
     }
 
-    fn run_file(&self, path: &str) -> Result<(), Error> {
+    fn run_file(&mut self, path: &str) -> Result<(), Error> {
         let source = fs::read_to_string(path)?;
         self.run(source)
     }
 
-    fn run_prompt(&self) -> Result<(), Error> {
+    fn run_prompt(&mut self) -> Result<(), Error> {
         let stdin = io::stdin();
         for line in stdin.lock().lines() {
             self.run(line?); // Ignore error.
@@ -40,21 +42,20 @@ impl Lox {
         Ok(())
     }
 
-    fn run(&self, source: String) -> Result<(), Error> {
+    fn run(&mut self, source: String) -> Result<(), Error> {
         let mut scanner = Scanner::new(source);
         let tokens = scanner.scan_tokens();
 
         let mut parser = Parser::new(tokens);
-        if let Some(expression) = parser.parse() {
-            println!("{}", self.interpreter.interpret(&expression)?);
-        }
+        let statements = parser.parse()?;
+        self.interpreter.interpret(&statements)?;
         Ok(())
     }
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
-    let args: Vec<String> = env::args().collect();
-    let lox = Lox::new();
+    let args: Vec<String> = std::env::args().collect();
+    let mut lox = Lox::new();
     match args.as_slice() {
         [_, file] => match lox.run_file(file) {
             Ok(_) => (),
