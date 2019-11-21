@@ -204,6 +204,17 @@ impl stmt::Visitor<()> for Interpreter {
         Ok(())
     }
 
+    fn visit_if_stmt(&mut self, condition: &Expr, else_branch: &Option<Stmt>, then_branch: &Stmt) -> Result<(), Error> {
+        let condition_value = self.evaluate(condition)?;
+        if self.is_truthy(&condition_value) {
+           self.execute(then_branch)?;
+        } else if let Some(other) = else_branch {
+           self.execute(other)?;
+        }
+
+        Ok(())
+    }
+
     fn visit_print_stmt(&mut self, expression: &Expr) -> Result<(), Error> {
         let value = self.evaluate(expression)?;
         println!("{}", self.stringify(value));
@@ -216,7 +227,9 @@ impl stmt::Visitor<()> for Interpreter {
             .map(|i| self.evaluate(i))
             .unwrap_or(Ok(Object::Null))?;
 
-        self.environment.borrow_mut().define(name.lexeme.clone(), value);
+        self.environment
+            .borrow_mut()
+            .define(name.lexeme.clone(), value);
         Ok(())
     }
 }

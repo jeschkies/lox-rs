@@ -103,6 +103,11 @@ pub enum Stmt {
     Expression {
         expression: Expr,
     },
+    If {
+        condition: Expr,
+        else_branch: Box<Option<Stmt>>,
+        then_branch: Box<Stmt>,
+    },
     Print {
         expression: Expr,
     },
@@ -118,6 +123,11 @@ impl Stmt {
         match self {
             Stmt::Block { statements } => visitor.visit_block_stmt(statements),
             Stmt::Expression { expression } => visitor.visit_expression_stmt(expression),
+            Stmt::If {
+                condition,
+                else_branch,
+                then_branch,
+            } => visitor.visit_if_stmt(condition, else_branch, then_branch),
             Stmt::Print { expression } => visitor.visit_print_stmt(expression),
             Stmt::Var { name, initializer } => visitor.visit_var_stmt(name, initializer),
             Stmt::Null => unimplemented!(),
@@ -135,7 +145,12 @@ pub mod stmt {
         //        fn visit_class_stmt(&self, Class stmt); TODO: Classes chapter
         fn visit_expression_stmt(&mut self, expression: &Expr) -> Result<R, Error>;
         //        fn visit_function_stmt(&self, Function stmt); TODO: Functions chapter
-        //        fn visit_if_stmt(&self, If stmt); TODO: Control Flows chapter
+        fn visit_if_stmt(
+            &mut self,
+            condition: &Expr,
+            else_branch: &Option<Stmt>,
+            then_branch: &Stmt,
+        ) -> Result<R, Error>;
         fn visit_print_stmt(&mut self, expression: &Expr) -> Result<R, Error>;
         //        fn visit_return_stmt(&self, Return stmt); TODO: Functions chapter
         fn visit_var_stmt(&mut self, name: &Token, initializer: &Option<Expr>) -> Result<R, Error>;
