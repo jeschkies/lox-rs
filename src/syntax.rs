@@ -19,6 +19,11 @@ pub enum Expr {
     Literal {
         value: LiteralValue,
     },
+    Logical {
+        left: Box<Expr>,
+        operator: Token,
+        right: Box<Expr>,
+    },
     Unary {
         operator: Token,
         right: Box<Expr>,
@@ -64,6 +69,11 @@ impl Expr {
             } => visitor.visit_binary_expr(left, operator, right),
             Expr::Grouping { expression } => visitor.visit_grouping_expr(expression),
             Expr::Literal { value } => visitor.visit_literal_expr(value),
+            Expr::Logical {
+                left,
+                operator,
+                right,
+            } => visitor.visit_logical_expr(left, operator, right),
             Expr::Unary { operator, right } => visitor.visit_unary_expr(operator, right),
             Expr::Variable { name } => visitor.visit_variable_expr(name),
         }
@@ -91,6 +101,12 @@ pub mod expr {
         /// * `expression` - This is the *inner* expression of the grouping.
         fn visit_grouping_expr(&mut self, expression: &Expr) -> Result<R, Error>;
         fn visit_literal_expr(&self, value: &LiteralValue) -> Result<R, Error>;
+        fn visit_logical_expr(
+            &mut self,
+            left: &Expr,
+            operator: &Token,
+            right: &Expr,
+        ) -> Result<R, Error>;
         fn visit_unary_expr(&mut self, operator: &Token, right: &Expr) -> Result<R, Error>;
         fn visit_variable_expr(&mut self, name: &Token) -> Result<R, Error>;
     }
@@ -194,6 +210,15 @@ impl expr::Visitor<String> for AstPrinter {
 
     fn visit_literal_expr(&self, value: &LiteralValue) -> Result<String, Error> {
         Ok(value.to_string()) // check for null
+    }
+
+    fn visit_logical_expr(
+        &mut self,
+        left: &Expr,
+        operator: &Token,
+        right: &Expr,
+    ) -> Result<String, Error> {
+        self.parenthesize(operator.lexeme.clone(), vec![left, right])
     }
 
     fn visit_unary_expr(&mut self, operator: &Token, right: &Expr) -> Result<String, Error> {

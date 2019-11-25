@@ -127,7 +127,7 @@ impl<'t> Parser<'t> {
     }
 
     fn assignment(&mut self) -> Result<Expr, Error> {
-        let expr = self.equality()?;
+        let expr = self.or_()?;
 
         if matches!(self, TokenType::Equal) {
             let value = Box::new(self.assignment()?);
@@ -140,6 +140,38 @@ impl<'t> Parser<'t> {
             // See note in http://craftinginterpreters.com/statements-and-state.html#assignment-syntax.
             let equals = self.previous();
             self.error(equals, "Invalid assignment target.");
+        }
+
+        Ok(expr)
+    }
+
+    fn or_(&mut self) -> Result<Expr, Error> {
+        let mut expr = self.and_()?;
+
+        while matches!(self, TokenType::Or) {
+            let operator: Token = (*self.previous()).clone();
+            let right: Expr = self.and_()?;
+            expr = Expr::Logical {
+                left: Box::new(expr),
+                operator: operator,
+                right: Box::new(right),
+            };
+        }
+
+        Ok(expr)
+    }
+
+    fn and_(&mut self) -> Result<Expr, Error> {
+        let mut expr = self.equality()?;
+
+        while matches!(self, TokenType::And) {
+            let operator: Token = (*self.previous()).clone();
+            let right: Expr = self.equality()?;
+            expr = Expr::Logical {
+                left: Box::new(expr),
+                operator: operator,
+                right: Box::new(right),
+            };
         }
 
         Ok(expr)
