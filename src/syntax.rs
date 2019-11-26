@@ -131,6 +131,10 @@ pub enum Stmt {
         name: Token,
         initializer: Option<Expr>,
     },
+    While {
+        condition: Expr,
+        body: Box<Stmt>,
+    },
     Null, // TODO see how stmt is handled after synchronize
 }
 
@@ -146,6 +150,7 @@ impl Stmt {
             } => visitor.visit_if_stmt(condition, else_branch, then_branch),
             Stmt::Print { expression } => visitor.visit_print_stmt(expression),
             Stmt::Var { name, initializer } => visitor.visit_var_stmt(name, initializer),
+            Stmt::While { condition, body } => visitor.visit_while_stmt(condition, body),
             Stmt::Null => unimplemented!(),
         }
     }
@@ -170,7 +175,7 @@ pub mod stmt {
         fn visit_print_stmt(&mut self, expression: &Expr) -> Result<R, Error>;
         //        fn visit_return_stmt(&self, Return stmt); TODO: Functions chapter
         fn visit_var_stmt(&mut self, name: &Token, initializer: &Option<Expr>) -> Result<R, Error>;
-        //        fn visit_while_stmt(&self, While stmt); TODO: Control Flows chapter
+        fn visit_while_stmt(&mut self, condition: &Expr, body: &Stmt) -> Result<R, Error>;
     }
 }
 

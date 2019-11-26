@@ -59,6 +59,8 @@ impl<'t> Parser<'t> {
             self.if_statement()
         } else if matches!(self, TokenType::Print) {
             self.print_statement()
+        } else if matches!(self, TokenType::While) {
+            self.while_statement()
         } else if matches!(self, TokenType::LeftBrace) {
             Ok(Stmt::Block {
                 statements: self.block()?,
@@ -107,6 +109,14 @@ impl<'t> Parser<'t> {
             "Expect ';' after variable declaration.",
         )?;
         Ok(Stmt::Var { name, initializer })
+    }
+
+    fn while_statement(&mut self) -> Result<Stmt, Error> {
+        self.consume(TokenType::LeftParen, "Expect '(' after 'while'.")?;
+        let condition = self.expression()?;
+        self.consume(TokenType::RightParen, "Expect ')' after condition.")?;
+        let body = Box::new(self.statement()?);
+        Ok(Stmt::While { condition, body })
     }
 
     fn expression_statement(&mut self) -> Result<Stmt, Error> {
