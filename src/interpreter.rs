@@ -166,6 +166,26 @@ impl expr::Visitor<Object> for Interpreter {
         }
     }
 
+    fn visit_logical_expr(
+        &mut self,
+        left: &Expr,
+        operator: &Token,
+        right: &Expr,
+    ) -> Result<Object, Error> {
+        let l = self.evaluate(left)?;
+
+        if operator.tpe == TokenType::Or {
+            if self.is_truthy(&l) {
+                return Ok(l);
+            }
+        } else {
+            if !self.is_truthy(&l) {
+                return Ok(l);
+            }
+        }
+        self.evaluate(right)
+    }
+
     fn visit_unary_expr(&mut self, operator: &Token, right: &Expr) -> Result<Object, Error> {
         let right = self.evaluate(right)?;
 
@@ -204,6 +224,22 @@ impl stmt::Visitor<()> for Interpreter {
         Ok(())
     }
 
+    fn visit_if_stmt(
+        &mut self,
+        condition: &Expr,
+        else_branch: &Option<Stmt>,
+        then_branch: &Stmt,
+    ) -> Result<(), Error> {
+        let condition_value = self.evaluate(condition)?;
+        if self.is_truthy(&condition_value) {
+            self.execute(then_branch)?;
+        } else if let Some(other) = else_branch {
+            self.execute(other)?;
+        }
+
+        Ok(())
+    }
+
     fn visit_print_stmt(&mut self, expression: &Expr) -> Result<(), Error> {
         let value = self.evaluate(expression)?;
         println!("{}", self.stringify(value));
@@ -216,7 +252,19 @@ impl stmt::Visitor<()> for Interpreter {
             .map(|i| self.evaluate(i))
             .unwrap_or(Ok(Object::Null))?;
 
-        self.environment.borrow_mut().define(name.lexeme.clone(), value);
+        self.environment
+            .borrow_mut()
+            .define(name.lexeme.clone(), value);
+        Ok(())
+    }
+
+    fn visit_while_stmt(&mut self, condition: &Expr, body: &Stmt) -> Result<(), Error> {
+        let mut value = self.evaluate(condition)?;
+        while self.is_truthy(&value) {
+            self.execute(body)?;
+            value = self.evaluate(condition)?
+        }
+
         Ok(())
     }
 }
