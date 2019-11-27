@@ -1,5 +1,6 @@
 use crate::env::Environment;
 use crate::error::Error;
+use crate::function::LoxCallable;
 use crate::object::Object;
 use crate::syntax::{expr, stmt};
 use crate::syntax::{Expr, LiteralValue, Stmt};
@@ -151,6 +152,24 @@ impl expr::Visitor<Object> for Interpreter {
             TokenType::EqualEqual => Ok(Object::Boolean(self.is_equal(&l, &r))),
             _ => unreachable!(),
         }
+    }
+
+    fn visit_call_expr(
+        &mut self,
+        callee: &Expr,
+        paren: &Token,
+        arguments: &Vec<Expr>,
+    ) -> Result<Object, Error> {
+        let callee_value = self.evaluate(callee)?;
+
+        let argument_values: Result<Vec<Object>, Error> = arguments
+            .into_iter()
+            .map(|expr| self.evaluate(expr))
+            .collect();
+
+        //let function: LoxCallable = callee_value; // TODO: throw and error if object is not a callable.
+        //function.call(self, argument_values?)
+        Ok(Object::Null)
     }
 
     fn visit_grouping_expr(&mut self, expr: &Expr) -> Result<Object, Error> {

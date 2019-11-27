@@ -1,5 +1,6 @@
 mod env;
 mod error;
+mod function;
 mod interpreter;
 mod object;
 mod parser;

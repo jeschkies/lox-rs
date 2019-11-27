@@ -384,8 +384,45 @@ impl<'t> Parser<'t> {
                 right: Box::new(right),
             })
         } else {
-            self.primary()
+            self.call()
         }
+    }
+
+    fn call(&mut self) -> Result<Expr, Error> {
+        let mut expr = self.primary()?;
+
+        loop {
+            if matches!(self, TokenType::LeftParen) {
+                expr = self.finish_call(expr)?;
+            } else {
+                break;
+            }
+        }
+
+        Ok(expr)
+    }
+
+    fn finish_call(&mut self, callee: Expr) -> Result<Expr, Error> {
+        let mut arguments: Vec<Expr> = Vec::new();
+        if !self.check(TokenType::RightParen) {
+            loop {
+                if arguments.len() >= 255 {
+                    // We are just reporting the error but not return them.
+                    self.error(self.peek(), "Cannot have more than 255 arguments.");
+                }
+                arguments.push(self.expression()?);
+                if !matches!(self, TokenType::Comma) {
+                    break;
+                }
+            }
+        }
+
+        let parent = self.consume(TokenType::RightParen, "Exprec ')' after arguments.")?;
+        Ok(Expr::Call {
+            callee: Box::new(callee),
+            paren: parent,
+            arguments,
+        })
     }
 
     fn primary(&mut self) -> Result<Expr, Error> {

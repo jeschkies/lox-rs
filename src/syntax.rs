@@ -13,6 +13,11 @@ pub enum Expr {
         operator: Token,
         right: Box<Expr>,
     },
+    Call {
+        callee: Box<Expr>,
+        paren: Token,
+        arguments: Vec<Expr>,
+    },
     Grouping {
         expression: Box<Expr>,
     },
@@ -67,6 +72,11 @@ impl Expr {
                 operator,
                 right,
             } => visitor.visit_binary_expr(left, operator, right),
+            Expr::Call {
+                callee,
+                paren,
+                arguments,
+            } => visitor.visit_call_expr(callee, paren, arguments),
             Expr::Grouping { expression } => visitor.visit_grouping_expr(expression),
             Expr::Literal { value } => visitor.visit_literal_expr(value),
             Expr::Logical {
@@ -92,6 +102,12 @@ pub mod expr {
             left: &Expr,
             operator: &Token,
             right: &Expr,
+        ) -> Result<R, Error>;
+        fn visit_call_expr(
+            &mut self,
+            callee: &Expr,
+            paren: &Token,
+            arguments: &Vec<Expr>,
         ) -> Result<R, Error>;
 
         /// Visit a grouping expression.
@@ -190,7 +206,7 @@ impl AstPrinter {
         let mut r = String::new();
         r.push_str("(");
         r.push_str(&name);
-        for e in &exprs {
+        for e in exprs {
             r.push_str(" ");
             r.push_str(&e.accept(self)?);
         }
@@ -236,6 +252,15 @@ impl expr::Visitor<String> for AstPrinter {
 
     fn visit_assign_expr(&mut self, name: &Token, value: &Expr) -> Result<String, Error> {
         self.parenthesize(name.lexeme.clone(), vec![value])
+    }
+
+    fn visit_call_expr(
+        &mut self,
+        callee: &Expr,
+        paren: &Token,
+        arguments: &Vec<Expr>,
+    ) -> Result<String, Error> {
+        unimplemented!()
     }
 }
 
