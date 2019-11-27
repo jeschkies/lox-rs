@@ -67,9 +67,10 @@ impl Interpreter {
 
     fn stringify(&self, object: Object) -> String {
         match object {
+            Object::Boolean(b) => b.to_string(),
+            Object::Callable(..) => unimplemented!(),
             Object::Null => "nil".to_string(),
             Object::Number(n) => n.to_string(),
-            Object::Boolean(b) => b.to_string(),
             Object::String(s) => s,
         }
     }
@@ -167,9 +168,20 @@ impl expr::Visitor<Object> for Interpreter {
             .map(|expr| self.evaluate(expr))
             .collect();
 
-        if let Object::Callable = callee_value {
-            //callee_value.call(self, argument_values?)
-            Ok(Object::Null)
+        if let Object::Callable(function) = callee_value {
+            let args_size = argument_values?.len();
+            if args_size != function.arity {
+                Err(Error::Runtime {
+                    token: paren.clone(),
+                    message: format!(
+                        "Expected {} arguments but got {}.",
+                        function.arity, args_size
+                    ),
+                })
+            } else {
+                //callee_value.call(self, argument_values?)
+                Ok(Object::Null)
+            }
         } else {
             Err(Error::Runtime {
                 token: paren.clone(),
