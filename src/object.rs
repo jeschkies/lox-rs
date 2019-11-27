@@ -2,6 +2,7 @@
 #[derive(Debug, Clone)]
 pub enum Object {
     Boolean(bool),
+    Callable,
     Null,
     Number(f64),
     String(String),

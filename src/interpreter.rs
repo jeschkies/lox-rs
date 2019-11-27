@@ -167,9 +167,15 @@ impl expr::Visitor<Object> for Interpreter {
             .map(|expr| self.evaluate(expr))
             .collect();
 
-        //let function: LoxCallable = callee_value; // TODO: throw and error if object is not a callable.
-        //function.call(self, argument_values?)
-        Ok(Object::Null)
+        if let Object::Callable = callee_value {
+            //callee_value.call(self, argument_values?)
+            Ok(Object::Null)
+        } else {
+            Err(Error::Runtime {
+                token: paren.clone(),
+                message: "Can only call functions and classes.".to_string(),
+            })
+        }
     }
 
     fn visit_grouping_expr(&mut self, expr: &Expr) -> Result<Object, Error> {
