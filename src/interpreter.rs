@@ -10,13 +10,18 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 pub struct Interpreter {
+    globals: Rc<RefCell<Environment>>,
     environment: Rc<RefCell<Environment>>,
 }
 
 impl Interpreter {
     pub fn new() -> Self {
+        let globals = Rc::new(RefCell::new(Environment::new()));
+        let clock: Object = Object::Callable(LoxCallable { arity: 0, body: Box::new(|args: &Vec<Object>| Object::Null) });
+        globals.borrow_mut().define("clock".to_string(), clock);
         Interpreter {
-            environment: Rc::new(RefCell::new(Environment::new())),
+            globals: Rc::clone(&globals),
+            environment: Rc::clone(&globals),
         }
     }
 
@@ -167,9 +172,10 @@ impl expr::Visitor<Object> for Interpreter {
             .into_iter()
             .map(|expr| self.evaluate(expr))
             .collect();
+        let args = argument_values?;
 
         if let Object::Callable(function) = callee_value {
-            let args_size = argument_values?.len();
+            let args_size = args.len();
             if args_size != function.arity {
                 Err(Error::Runtime {
                     token: paren.clone(),
@@ -179,8 +185,7 @@ impl expr::Visitor<Object> for Interpreter {
                     ),
                 })
             } else {
-                //callee_value.call(self, argument_values?)
-                Ok(Object::Null)
+                Ok(function.call(self, &args))
             }
         } else {
             Err(Error::Runtime {
