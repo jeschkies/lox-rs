@@ -277,6 +277,15 @@ impl stmt::Visitor<()> for Interpreter {
         Ok(())
     }
 
+    fn visit_function_stmt(
+        &mut self,
+        name: &Token,
+        params: &Vec<Token>,
+        body: &Vec<Stmt>,
+    ) -> Result<(), Error> {
+        unimplemented!()
+    }
+
     fn visit_if_stmt(
         &mut self,
         condition: &Expr,

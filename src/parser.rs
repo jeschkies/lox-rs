@@ -41,6 +41,8 @@ impl<'t> Parser<'t> {
     fn declaration(&mut self) -> Result<Stmt, Error> {
         let statement = if matches!(self, TokenType::Var) {
             self.var_declaration()
+        } else if matches!(self, TokenType::Fun) {
+            self.function("function")
         } else {
             self.statement()
         };
@@ -175,6 +177,40 @@ impl<'t> Parser<'t> {
         let expr = self.expression()?;
         self.consume(TokenType::Semicolon, "Expect ';' after expression.")?;
         Ok(Stmt::Expression { expression: expr })
+    }
+
+    fn function(&mut self, kind: &str) -> Result<Stmt, Error> {
+        let name = self.consume(
+            TokenType::Identifier,
+            format!("Expect {} name.", kind).as_str(),
+        )?;
+        self.consume(
+            TokenType::LeftParen,
+            format!("Expect '(' after {} name.", kind).as_str(),
+        )?;
+        let mut params: Vec<Token> = Vec::new();
+        if !self.check(TokenType::RightParen) {
+            loop {
+                if matches!(self, TokenType::Comma) {
+                    if params.len() >= 255 {
+                        // We are not returning an error here.
+                        self.error(self.peek(), "Cannot have more than 255 parameters.");
+                    }
+
+                    params.push(self.consume(TokenType::Identifier, "Expect parameter name.")?)
+                } else {
+                    break;
+                }
+            }
+        }
+        self.consume(TokenType::RightParen, "Expect ')' after parameters.")?;
+
+        self.consume(
+            TokenType::LeftBrace,
+            format!("Expect '{{' before {} body.", kind).as_str(),
+        )?;
+        let body = self.block()?;
+        Ok(Stmt::Function { name, params, body })
     }
 
     fn block(&mut self) -> Result<Vec<Stmt>, Error> {

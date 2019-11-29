@@ -135,6 +135,11 @@ pub enum Stmt {
     Expression {
         expression: Expr,
     },
+    Function {
+        name: Token,
+        params: Vec<Token>,
+        body: Vec<Stmt>,
+    },
     If {
         condition: Expr,
         else_branch: Box<Option<Stmt>>,
@@ -159,6 +164,9 @@ impl Stmt {
         match self {
             Stmt::Block { statements } => visitor.visit_block_stmt(statements),
             Stmt::Expression { expression } => visitor.visit_expression_stmt(expression),
+            Stmt::Function { name, params, body } => {
+                visitor.visit_function_stmt(name, params, body)
+            }
             Stmt::If {
                 condition,
                 else_branch,
@@ -181,7 +189,12 @@ pub mod stmt {
         fn visit_block_stmt(&mut self, statements: &Vec<Stmt>) -> Result<R, Error>;
         //        fn visit_class_stmt(&self, Class stmt); TODO: Classes chapter
         fn visit_expression_stmt(&mut self, expression: &Expr) -> Result<R, Error>;
-        //        fn visit_function_stmt(&self, Function stmt); TODO: Functions chapter
+        fn visit_function_stmt(
+            &mut self,
+            name: &Token,
+            params: &Vec<Token>,
+            body: &Vec<Stmt>,
+        ) -> Result<R, Error>;
         fn visit_if_stmt(
             &mut self,
             condition: &Expr,
