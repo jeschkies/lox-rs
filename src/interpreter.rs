@@ -8,6 +8,7 @@ use crate::token::{Token, TokenType};
 
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 pub struct Interpreter {
     globals: Rc<RefCell<Environment>>,
@@ -17,7 +18,17 @@ pub struct Interpreter {
 impl Interpreter {
     pub fn new() -> Self {
         let globals = Rc::new(RefCell::new(Environment::new()));
-        let clock: Object = Object::Callable(LoxCallable { arity: 0, body: Box::new(|args: &Vec<Object>| Object::Null) });
+        let clock: Object = Object::Callable(LoxCallable {
+            arity: 0,
+            body: Box::new(|args: &Vec<Object>| {
+                Object::Number(
+                    SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .expect("Could not retrieve time.")
+                        .as_millis() as f64,
+                )
+            }),
+        });
         globals.borrow_mut().define("clock".to_string(), clock);
         Interpreter {
             globals: Rc::clone(&globals),

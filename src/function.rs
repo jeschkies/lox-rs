@@ -6,7 +6,7 @@ use std::fmt;
 #[derive(Clone)]
 pub struct LoxCallable {
     pub arity: usize,
-    pub body: Box<fn(&Vec<Object>) -> Object>
+    pub body: Box<fn(&Vec<Object>) -> Object>,
 }
 
 impl LoxCallable {
