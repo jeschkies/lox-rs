@@ -45,7 +45,7 @@ impl Function {
                 match interpreter.execute_block(body, environment) {
                     Err(Error::Return { value }) => Ok(value),
                     Err(other) => Err(other),
-                    Ok(..) => Ok(Object::Null),
+                    Ok(..) => Ok(Object::Null), // We don't have a return statement.
                 }
             }
         }
