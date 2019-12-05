@@ -128,6 +128,7 @@ pub mod expr {
     }
 }
 
+#[derive(Clone)]
 pub enum Stmt {
     Block {
         statements: Vec<Stmt>,

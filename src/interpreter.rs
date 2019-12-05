@@ -1,6 +1,6 @@
 use crate::env::Environment;
 use crate::error::Error;
-use crate::function::LoxCallable;
+use crate::function::Function;
 use crate::object::Object;
 use crate::syntax::{expr, stmt};
 use crate::syntax::{Expr, LiteralValue, Stmt};
@@ -11,14 +11,14 @@ use std::rc::Rc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub struct Interpreter {
-    globals: Rc<RefCell<Environment>>,
+    pub globals: Rc<RefCell<Environment>>,
     environment: Rc<RefCell<Environment>>,
 }
 
 impl Interpreter {
     pub fn new() -> Self {
         let globals = Rc::new(RefCell::new(Environment::new()));
-        let clock: Object = Object::Callable(LoxCallable {
+        let clock: Object = Object::Callable(Function::Native {
             arity: 0,
             body: Box::new(|args: &Vec<Object>| {
                 Object::Number(
@@ -51,7 +51,7 @@ impl Interpreter {
         statement.accept(self)
     }
 
-    fn execute_block(
+    pub fn execute_block(
         &mut self,
         statements: &Vec<Stmt>,
         environment: Rc<RefCell<Environment>>,
@@ -84,7 +84,7 @@ impl Interpreter {
     fn stringify(&self, object: Object) -> String {
         match object {
             Object::Boolean(b) => b.to_string(),
-            Object::Callable(..) => unimplemented!(),
+            Object::Callable(f) => f.to_string(),
             Object::Null => "nil".to_string(),
             Object::Number(n) => n.to_string(),
             Object::String(s) => s,
@@ -187,12 +187,13 @@ impl expr::Visitor<Object> for Interpreter {
 
         if let Object::Callable(function) = callee_value {
             let args_size = args.len();
-            if args_size != function.arity {
+            if args_size != function.arity() {
                 Err(Error::Runtime {
                     token: paren.clone(),
                     message: format!(
                         "Expected {} arguments but got {}.",
-                        function.arity, args_size
+                        function.arity(),
+                        args_size
                     ),
                 })
             } else {

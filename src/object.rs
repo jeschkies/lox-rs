@@ -1,10 +1,10 @@
-use crate::function::LoxCallable;
+use crate::function::Function;
 
 /// A simple representation of an Lox object akin to a Java `Object`.
 #[derive(Debug, Clone)]
 pub enum Object {
     Boolean(bool),
-    Callable(LoxCallable),
+    Callable(Function),
     Null,
     Number(f64),
     String(String),
