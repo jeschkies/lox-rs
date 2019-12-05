@@ -11,14 +11,18 @@ use std::rc::Rc;
 
 #[derive(Clone)]
 pub enum Function {
+    // An anonymous implementation of LoxCallable in the book.
     Native {
         arity: usize,
         body: Box<fn(&Vec<Object>) -> Object>,
     },
+
+    // A LoxFunction in the book.
     User {
         name: Token,
         params: Vec<Token>,
         body: Vec<Stmt>,
+        closure: Rc<RefCell<Environment>>,
     },
 }
 
@@ -30,9 +34,9 @@ impl Function {
     ) -> Result<Object, Error> {
         match self {
             Function::Native { body, .. } => Ok(body(arguments)),
-            Function::User { params, body, .. } => {
+            Function::User { params, body, closure, .. } => {
                 let mut environment =
-                    Rc::new(RefCell::new(Environment::from(&interpreter.globals)));
+                    Rc::new(RefCell::new(Environment::from(closure)));
                 for (param, argument) in params.iter().zip(arguments.iter()) {
                     environment
                         .borrow_mut()
@@ -41,7 +45,7 @@ impl Function {
                 match interpreter.execute_block(body, environment) {
                     Err(Error::Return { value }) => Ok(value),
                     Err(other) => Err(other),
-                    Ok(..) => unreachable!(),
+                    Ok(..) => Ok(Object::Null),
                 }
             }
         }

@@ -288,6 +288,7 @@ impl stmt::Visitor<()> for Interpreter {
             name: name.clone(),
             params: params.clone(),
             body: body.clone(),
+            closure: Rc::clone(&self.environment),
         };
         self.environment
             .borrow_mut()
