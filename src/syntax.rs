@@ -149,6 +149,10 @@ pub enum Stmt {
     Print {
         expression: Expr,
     },
+    Return {
+        keyword: Token,
+        value: Option<Expr>,
+    },
     Var {
         name: Token,
         initializer: Option<Expr>,
@@ -174,6 +178,7 @@ impl Stmt {
                 then_branch,
             } => visitor.visit_if_stmt(condition, else_branch, then_branch),
             Stmt::Print { expression } => visitor.visit_print_stmt(expression),
+            Stmt::Return { keyword, value } => visitor.visit_return_stmt(keyword, value),
             Stmt::Var { name, initializer } => visitor.visit_var_stmt(name, initializer),
             Stmt::While { condition, body } => visitor.visit_while_stmt(condition, body),
             Stmt::Null => unimplemented!(),
@@ -203,7 +208,7 @@ pub mod stmt {
             then_branch: &Stmt,
         ) -> Result<R, Error>;
         fn visit_print_stmt(&mut self, expression: &Expr) -> Result<R, Error>;
-        //        fn visit_return_stmt(&self, Return stmt); TODO: Functions chapter
+        fn visit_return_stmt(&mut self, keyword: &Token, value: &Option<Expr>) -> Result<R, Error>;
         fn visit_var_stmt(&mut self, name: &Token, initializer: &Option<Expr>) -> Result<R, Error>;
         fn visit_while_stmt(&mut self, condition: &Expr, body: &Stmt) -> Result<R, Error>;
     }

@@ -63,6 +63,8 @@ impl<'t> Parser<'t> {
             self.if_statement()
         } else if matches!(self, TokenType::Print) {
             self.print_statement()
+        } else if matches!(self, TokenType::Return) {
+            self.return_statement()
         } else if matches!(self, TokenType::While) {
             self.while_statement()
         } else if matches!(self, TokenType::LeftBrace) {
@@ -147,6 +149,19 @@ impl<'t> Parser<'t> {
         let value = self.expression()?;
         self.consume(TokenType::Semicolon, "Expect ';' after value.")?;
         Ok(Stmt::Print { expression: value })
+    }
+
+    fn return_statement(&mut self) -> Result<Stmt, Error> {
+        let keyword: Token = self.previous().clone();
+        println!("keyword: {}", keyword);
+        let value = if !self.check(TokenType::Semicolon) {
+            Some(self.expression()?)
+        } else {
+            None
+        };
+
+        self.consume(TokenType::Semicolon, "Expect ';' after return values.")?;
+        Ok(Stmt::Return { keyword, value })
     }
 
     fn var_declaration(&mut self) -> Result<Stmt, Error> {

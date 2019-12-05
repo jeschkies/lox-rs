@@ -1,4 +1,5 @@
 use crate::env::Environment;
+use crate::error::Error;
 use crate::interpreter::Interpreter;
 use crate::object::Object;
 use crate::syntax::Stmt;
@@ -22,9 +23,13 @@ pub enum Function {
 }
 
 impl Function {
-    pub fn call(&self, interpreter: &mut Interpreter, arguments: &Vec<Object>) -> Object {
+    pub fn call(
+        &self,
+        interpreter: &mut Interpreter,
+        arguments: &Vec<Object>,
+    ) -> Result<Object, Error> {
         match self {
-            Function::Native { body, .. } => body(arguments),
+            Function::Native { body, .. } => Ok(body(arguments)),
             Function::User { params, body, .. } => {
                 let mut environment =
                     Rc::new(RefCell::new(Environment::from(&interpreter.globals)));
@@ -33,8 +38,11 @@ impl Function {
                         .borrow_mut()
                         .define(param.lexeme.clone(), argument.clone());
                 }
-                interpreter.execute_block(body, environment);
-                Object::Null
+                match interpreter.execute_block(body, environment) {
+                    Err(Error::Return { value }) => Ok(value),
+                    Err(other) => Err(other),
+                    Ok(..) => unreachable!(),
+                }
             }
         }
     }

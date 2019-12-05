@@ -60,6 +60,7 @@ fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
     match args.as_slice() {
         [_, file] => match lox.run_file(file) {
             Ok(_) => (),
+            Err(Error::Return { .. }) => unreachable!(),
             Err(Error::Runtime { .. }) => exit(70),
             Err(Error::Parse) => exit(65),
             Err(Error::Io(_)) => unimplemented!(),

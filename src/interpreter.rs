@@ -197,7 +197,7 @@ impl expr::Visitor<Object> for Interpreter {
                     ),
                 })
             } else {
-                Ok(function.call(self, &args))
+                function.call(self, &args)
             }
         } else {
             Err(Error::Runtime {
@@ -315,6 +315,18 @@ impl stmt::Visitor<()> for Interpreter {
         let value = self.evaluate(expression)?;
         println!("{}", self.stringify(value));
         Ok(())
+    }
+
+    fn visit_return_stmt(&mut self, keyword: &Token, value: &Option<Expr>) -> Result<(), Error> {
+        let return_value: Object = value
+            .as_ref()
+            .map(|v| self.evaluate(v))
+            .unwrap_or(Ok(Object::Null))?;
+
+        // We use Err to jump back to the top.
+        Err(Error::Return {
+            value: return_value,
+        })
     }
 
     fn visit_var_stmt(&mut self, name: &Token, initializer: &Option<Expr>) -> Result<(), Error> {
