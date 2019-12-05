@@ -284,7 +284,15 @@ impl stmt::Visitor<()> for Interpreter {
         params: &Vec<Token>,
         body: &Vec<Stmt>,
     ) -> Result<(), Error> {
-        unimplemented!()
+        let function = Function::User {
+            name: name.clone(),
+            params: params.clone(),
+            body: body.clone(),
+        };
+        self.environment
+            .borrow_mut()
+            .define(name.lexeme.clone(), Object::Callable(function));
+        Ok(())
     }
 
     fn visit_if_stmt(

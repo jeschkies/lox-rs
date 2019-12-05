@@ -191,14 +191,13 @@ impl<'t> Parser<'t> {
         let mut params: Vec<Token> = Vec::new();
         if !self.check(TokenType::RightParen) {
             loop {
-                if matches!(self, TokenType::Comma) {
-                    if params.len() >= 255 {
-                        // We are not returning an error here.
-                        self.error(self.peek(), "Cannot have more than 255 parameters.");
-                    }
+                if params.len() >= 255 {
+                    // We are not returning an error here.
+                    self.error(self.peek(), "Cannot have more than 255 parameters.");
+                }
+                params.push(self.consume(TokenType::Identifier, "Expect parameter name.")?);
 
-                    params.push(self.consume(TokenType::Identifier, "Expect parameter name.")?)
-                } else {
+                if !matches!(self, TokenType::Comma) {
                     break;
                 }
             }
