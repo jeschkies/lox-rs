@@ -1,5 +1,6 @@
 use crate::env::Environment;
 use crate::error::Error;
+use crate::function::Function;
 use crate::object::Object;
 use crate::syntax::{expr, stmt};
 use crate::syntax::{Expr, LiteralValue, Stmt};
@@ -7,15 +8,31 @@ use crate::token::{Token, TokenType};
 
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 pub struct Interpreter {
+    pub globals: Rc<RefCell<Environment>>,
     environment: Rc<RefCell<Environment>>,
 }
 
 impl Interpreter {
     pub fn new() -> Self {
+        let globals = Rc::new(RefCell::new(Environment::new()));
+        let clock: Object = Object::Callable(Function::Native {
+            arity: 0,
+            body: Box::new(|args: &Vec<Object>| {
+                Object::Number(
+                    SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .expect("Could not retrieve time.")
+                        .as_millis() as f64,
+                )
+            }),
+        });
+        globals.borrow_mut().define("clock".to_string(), clock);
         Interpreter {
-            environment: Rc::new(RefCell::new(Environment::new())),
+            globals: Rc::clone(&globals),
+            environment: Rc::clone(&globals),
         }
     }
 
@@ -34,7 +51,7 @@ impl Interpreter {
         statement.accept(self)
     }
 
-    fn execute_block(
+    pub fn execute_block(
         &mut self,
         statements: &Vec<Stmt>,
         environment: Rc<RefCell<Environment>>,
@@ -66,9 +83,10 @@ impl Interpreter {
 
     fn stringify(&self, object: Object) -> String {
         match object {
+            Object::Boolean(b) => b.to_string(),
+            Object::Callable(f) => f.to_string(),
             Object::Null => "nil".to_string(),
             Object::Number(n) => n.to_string(),
-            Object::Boolean(b) => b.to_string(),
             Object::String(s) => s,
         }
     }
@@ -153,6 +171,42 @@ impl expr::Visitor<Object> for Interpreter {
         }
     }
 
+    fn visit_call_expr(
+        &mut self,
+        callee: &Expr,
+        paren: &Token,
+        arguments: &Vec<Expr>,
+    ) -> Result<Object, Error> {
+        let callee_value = self.evaluate(callee)?;
+
+        let argument_values: Result<Vec<Object>, Error> = arguments
+            .into_iter()
+            .map(|expr| self.evaluate(expr))
+            .collect();
+        let args = argument_values?;
+
+        if let Object::Callable(function) = callee_value {
+            let args_size = args.len();
+            if args_size != function.arity() {
+                Err(Error::Runtime {
+                    token: paren.clone(),
+                    message: format!(
+                        "Expected {} arguments but got {}.",
+                        function.arity(),
+                        args_size
+                    ),
+                })
+            } else {
+                function.call(self, &args)
+            }
+        } else {
+            Err(Error::Runtime {
+                token: paren.clone(),
+                message: "Can only call functions and classes.".to_string(),
+            })
+        }
+    }
+
     fn visit_grouping_expr(&mut self, expr: &Expr) -> Result<Object, Error> {
         self.evaluate(expr)
     }
@@ -224,6 +278,24 @@ impl stmt::Visitor<()> for Interpreter {
         Ok(())
     }
 
+    fn visit_function_stmt(
+        &mut self,
+        name: &Token,
+        params: &Vec<Token>,
+        body: &Vec<Stmt>,
+    ) -> Result<(), Error> {
+        let function = Function::User {
+            name: name.clone(),
+            params: params.clone(),
+            body: body.clone(),
+            closure: Rc::clone(&self.environment),
+        };
+        self.environment
+            .borrow_mut()
+            .define(name.lexeme.clone(), Object::Callable(function));
+        Ok(())
+    }
+
     fn visit_if_stmt(
         &mut self,
         condition: &Expr,
@@ -244,6 +316,18 @@ impl stmt::Visitor<()> for Interpreter {
         let value = self.evaluate(expression)?;
         println!("{}", self.stringify(value));
         Ok(())
+    }
+
+    fn visit_return_stmt(&mut self, keyword: &Token, value: &Option<Expr>) -> Result<(), Error> {
+        let return_value: Object = value
+            .as_ref()
+            .map(|v| self.evaluate(v))
+            .unwrap_or(Ok(Object::Null))?;
+
+        // We use Err to jump back to the top.
+        Err(Error::Return {
+            value: return_value,
+        })
     }
 
     fn visit_var_stmt(&mut self, name: &Token, initializer: &Option<Expr>) -> Result<(), Error> {

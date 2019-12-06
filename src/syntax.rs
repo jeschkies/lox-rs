@@ -13,6 +13,11 @@ pub enum Expr {
         operator: Token,
         right: Box<Expr>,
     },
+    Call {
+        callee: Box<Expr>,
+        paren: Token,
+        arguments: Vec<Expr>,
+    },
     Grouping {
         expression: Box<Expr>,
     },
@@ -67,6 +72,11 @@ impl Expr {
                 operator,
                 right,
             } => visitor.visit_binary_expr(left, operator, right),
+            Expr::Call {
+                callee,
+                paren,
+                arguments,
+            } => visitor.visit_call_expr(callee, paren, arguments),
             Expr::Grouping { expression } => visitor.visit_grouping_expr(expression),
             Expr::Literal { value } => visitor.visit_literal_expr(value),
             Expr::Logical {
@@ -93,6 +103,12 @@ pub mod expr {
             operator: &Token,
             right: &Expr,
         ) -> Result<R, Error>;
+        fn visit_call_expr(
+            &mut self,
+            callee: &Expr,
+            paren: &Token,
+            arguments: &Vec<Expr>,
+        ) -> Result<R, Error>;
 
         /// Visit a grouping expression.
         ///
@@ -112,12 +128,18 @@ pub mod expr {
     }
 }
 
+#[derive(Clone)]
 pub enum Stmt {
     Block {
         statements: Vec<Stmt>,
     },
     Expression {
         expression: Expr,
+    },
+    Function {
+        name: Token,
+        params: Vec<Token>,
+        body: Vec<Stmt>,
     },
     If {
         condition: Expr,
@@ -126,6 +148,10 @@ pub enum Stmt {
     },
     Print {
         expression: Expr,
+    },
+    Return {
+        keyword: Token,
+        value: Option<Expr>,
     },
     Var {
         name: Token,
@@ -143,12 +169,16 @@ impl Stmt {
         match self {
             Stmt::Block { statements } => visitor.visit_block_stmt(statements),
             Stmt::Expression { expression } => visitor.visit_expression_stmt(expression),
+            Stmt::Function { name, params, body } => {
+                visitor.visit_function_stmt(name, params, body)
+            }
             Stmt::If {
                 condition,
                 else_branch,
                 then_branch,
             } => visitor.visit_if_stmt(condition, else_branch, then_branch),
             Stmt::Print { expression } => visitor.visit_print_stmt(expression),
+            Stmt::Return { keyword, value } => visitor.visit_return_stmt(keyword, value),
             Stmt::Var { name, initializer } => visitor.visit_var_stmt(name, initializer),
             Stmt::While { condition, body } => visitor.visit_while_stmt(condition, body),
             Stmt::Null => unimplemented!(),
@@ -165,7 +195,12 @@ pub mod stmt {
         fn visit_block_stmt(&mut self, statements: &Vec<Stmt>) -> Result<R, Error>;
         //        fn visit_class_stmt(&self, Class stmt); TODO: Classes chapter
         fn visit_expression_stmt(&mut self, expression: &Expr) -> Result<R, Error>;
-        //        fn visit_function_stmt(&self, Function stmt); TODO: Functions chapter
+        fn visit_function_stmt(
+            &mut self,
+            name: &Token,
+            params: &Vec<Token>,
+            body: &Vec<Stmt>,
+        ) -> Result<R, Error>;
         fn visit_if_stmt(
             &mut self,
             condition: &Expr,
@@ -173,7 +208,7 @@ pub mod stmt {
             then_branch: &Stmt,
         ) -> Result<R, Error>;
         fn visit_print_stmt(&mut self, expression: &Expr) -> Result<R, Error>;
-        //        fn visit_return_stmt(&self, Return stmt); TODO: Functions chapter
+        fn visit_return_stmt(&mut self, keyword: &Token, value: &Option<Expr>) -> Result<R, Error>;
         fn visit_var_stmt(&mut self, name: &Token, initializer: &Option<Expr>) -> Result<R, Error>;
         fn visit_while_stmt(&mut self, condition: &Expr, body: &Stmt) -> Result<R, Error>;
     }
@@ -190,7 +225,7 @@ impl AstPrinter {
         let mut r = String::new();
         r.push_str("(");
         r.push_str(&name);
-        for e in &exprs {
+        for e in exprs {
             r.push_str(" ");
             r.push_str(&e.accept(self)?);
         }
@@ -236,6 +271,15 @@ impl expr::Visitor<String> for AstPrinter {
 
     fn visit_assign_expr(&mut self, name: &Token, value: &Expr) -> Result<String, Error> {
         self.parenthesize(name.lexeme.clone(), vec![value])
+    }
+
+    fn visit_call_expr(
+        &mut self,
+        callee: &Expr,
+        paren: &Token,
+        arguments: &Vec<Expr>,
+    ) -> Result<String, Error> {
+        unimplemented!()
     }
 }
 
