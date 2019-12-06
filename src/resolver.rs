@@ -1,7 +1,7 @@
-use crate::error::Error;
+use crate::error::{parser_error, Error};
 use crate::interpreter::Interpreter;
-use crate::syntax::{Expr, LiteralValue, Stmt};
 use crate::syntax::{expr, stmt};
+use crate::syntax::{Expr, LiteralValue, Stmt};
 use crate::token::Token;
 
 use std::collections::HashMap;
@@ -42,18 +42,47 @@ impl Resolver {
     }
 
     fn declare(&mut self, name: &Token) {
-        unimplemented!()
+        match self.scopes.last_mut() {
+            Some(ref mut scope) => {
+                scope.insert(name.lexeme.clone(), false);
+            },
+            None => (),
+        };
     }
 
     fn define(&mut self, name: &Token) {
-        unimplemented!()
+        match self.scopes.last_mut() {
+            Some(ref mut scope) => {
+                scope.insert(name.lexeme.clone(), true);
+            },
+            None => (),
+        };
+    }
+
+    fn resolve_function(&mut self, params: &Vec<Token>, body: &Vec<Stmt>) {
+        self.begin_scope();
+        for param in params {
+            self.declare(param);
+            self.define(param);
+        }
+        self.resolve_stmts(body);
+        self.end_scope();
+    }
+
+    fn resolve_local(&self, name: &Token) {
+        for (i, scope) in self.scopes.iter().rev().enumerate() {
+            if scope.contains_key(&name.lexeme) {
+                self.interpreter.resolve(name, i);
+            }
+        }
     }
 }
 
 impl expr::Visitor<()> for Resolver {
-
     fn visit_assign_expr(&mut self, name: &Token, value: &Expr) -> Result<(), Error> {
-        unimplemented!()
+        self.resolve_expr(value);
+        self.resolve_local(name);
+        Ok(())
     }
 
     fn visit_binary_expr(
@@ -62,7 +91,9 @@ impl expr::Visitor<()> for Resolver {
         operator: &Token,
         right: &Expr,
     ) -> Result<(), Error> {
-        unimplemented!()
+        self.resolve_expr(left);
+        self.resolve_expr(right);
+        Ok(())
     }
 
     fn visit_call_expr(
@@ -71,15 +102,20 @@ impl expr::Visitor<()> for Resolver {
         paren: &Token,
         arguments: &Vec<Expr>,
     ) -> Result<(), Error> {
-        unimplemented!()
+        self.resolve_expr(callee);
+        for argument in arguments {
+            self.resolve_expr(argument);
+        }
+        Ok(())
     }
 
     fn visit_grouping_expr(&mut self, expression: &Expr) -> Result<(), Error> {
-        unimplemented!()
+        self.resolve_expr(expression);
+        Ok(())
     }
 
     fn visit_literal_expr(&self, value: &LiteralValue) -> Result<(), Error> {
-        unimplemented!()
+        Ok(())
     }
 
     fn visit_logical_expr(
@@ -88,20 +124,30 @@ impl expr::Visitor<()> for Resolver {
         operator: &Token,
         right: &Expr,
     ) -> Result<(), Error> {
-        unimplemented!()
+        self.resolve_expr(left);
+        self.resolve_expr(right);
+        Ok(())
     }
 
     fn visit_unary_expr(&mut self, operator: &Token, right: &Expr) -> Result<(), Error> {
-       unimplemented!()
+        self.resolve_expr(right);
+        Ok(())
     }
 
     fn visit_variable_expr(&mut self, name: &Token) -> Result<(), Error> {
-        unimplemented!()
+        if let Some(scope) = self.scopes.last() {
+            if let Some(flag) = scope.get(&name.lexeme) {
+                if *flag == false {
+                    parser_error(name, "Cannot read local variable in its own initializer.");
+                }
+            }
+        };
+        self.resolve_local(name);
+        Ok(())
     }
 }
 
 impl stmt::Visitor<()> for Resolver {
-
     fn visit_block_stmt(&mut self, statements: &Vec<Stmt>) -> Result<(), Error> {
         self.begin_scope();
         self.resolve_stmts(statements);
@@ -110,7 +156,8 @@ impl stmt::Visitor<()> for Resolver {
     }
 
     fn visit_expression_stmt(&mut self, expression: &Expr) -> Result<(), Error> {
-        unimplemented!()
+        self.resolve_expr(expression);
+        Ok(())
     }
 
     fn visit_function_stmt(
@@ -119,7 +166,11 @@ impl stmt::Visitor<()> for Resolver {
         params: &Vec<Token>,
         body: &Vec<Stmt>,
     ) -> Result<(), Error> {
-        unimplemented!()
+        self.declare(name);
+        self.define(name);
+
+        self.resolve_function(params, body);
+        Ok(())
     }
 
     fn visit_if_stmt(
@@ -128,15 +179,24 @@ impl stmt::Visitor<()> for Resolver {
         else_branch: &Option<Stmt>,
         then_branch: &Stmt,
     ) -> Result<(), Error> {
-        unimplemented!()
+        self.resolve_expr(condition);
+        self.resolve_stmt(then_branch);
+        if let Some(else_stmt) = else_branch {
+            self.resolve_stmt(else_stmt);
+        }
+        Ok(())
     }
 
     fn visit_print_stmt(&mut self, expression: &Expr) -> Result<(), Error> {
-        unimplemented!()
+        self.resolve_expr(expression);
+        Ok(())
     }
 
     fn visit_return_stmt(&mut self, keyword: &Token, value: &Option<Expr>) -> Result<(), Error> {
-        unimplemented!()
+        if let Some(return_value) = value {
+            self.resolve_expr(return_value);
+        }
+        Ok(())
     }
 
     fn visit_var_stmt(&mut self, name: &Token, initializer: &Option<Expr>) -> Result<(), Error> {
@@ -149,6 +209,8 @@ impl stmt::Visitor<()> for Resolver {
     }
 
     fn visit_while_stmt(&mut self, condition: &Expr, body: &Stmt) -> Result<(), Error> {
-        unimplemented!()
+        self.resolve_expr(condition);
+        self.resolve_stmt(body);
+        Ok(())
     }
 }
