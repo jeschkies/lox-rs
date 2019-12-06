@@ -7,12 +7,14 @@ use crate::syntax::{Expr, LiteralValue, Stmt};
 use crate::token::{Token, TokenType};
 
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::rc::Rc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub struct Interpreter {
     pub globals: Rc<RefCell<Environment>>,
     environment: Rc<RefCell<Environment>>,
+    locals: HashMap<Token, usize>, // This might break if two Tokens are on the same line and have the same name.
 }
 
 impl Interpreter {
@@ -33,6 +35,7 @@ impl Interpreter {
         Interpreter {
             globals: Rc::clone(&globals),
             environment: Rc::clone(&globals),
+            locals: HashMap::new(),
         }
     }
 
@@ -49,6 +52,10 @@ impl Interpreter {
 
     fn execute(&mut self, statement: &Stmt) -> Result<(), Error> {
         statement.accept(self)
+    }
+
+    pub fn resolve(&mut self, name: &Token, depth: usize) {
+        self.locals.insert(name.clone(), depth);
     }
 
     pub fn execute_block(
@@ -97,6 +104,14 @@ impl Interpreter {
             token: operator.clone(),
             message: "Operand must be a number.".to_string(),
         })
+    }
+
+    fn look_up_variable(&self, name: &Token) -> Result<Object, Error> {
+        if let Some(distance) = self.locals.get(name) {
+            self.environment.borrow().get_at(*distance, name)
+        } else {
+            self.globals.borrow().get(name)
+        }
     }
 }
 
@@ -254,7 +269,7 @@ impl expr::Visitor<Object> for Interpreter {
     }
 
     fn visit_variable_expr(&mut self, name: &Token) -> Result<Object, Error> {
-        self.environment.borrow().get(name)
+        self.look_up_variable(name)
     }
 
     fn visit_assign_expr(&mut self, name: &Token, value: &Expr) -> Result<Object, Error> {

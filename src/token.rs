@@ -1,4 +1,5 @@
 use std::fmt;
+use std::hash::{Hash, Hasher};
 extern crate phf;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -82,3 +83,12 @@ impl fmt::Display for Token {
         }
     }
 }
+
+impl Hash for Token {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.lexeme.hash(state);
+        self.line.hash(state);
+    }
+}
+
+impl Eq for Token {}

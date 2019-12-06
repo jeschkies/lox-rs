@@ -31,6 +31,10 @@ impl Environment {
         self.values.insert(name, value);
     }
 
+    pub fn get_at(&self, distance: usize, name: &Token) -> Result<Object, Error> {
+        unimplemented!()
+    }
+
     pub fn get(&self, name: &Token) -> Result<Object, Error> {
         let key = &*name.lexeme;
         if let Some(value) = self.values.get(key) {
