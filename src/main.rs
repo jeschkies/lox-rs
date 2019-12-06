@@ -4,6 +4,7 @@ mod function;
 mod interpreter;
 mod object;
 mod parser;
+mod resolver;
 mod scanner;
 mod syntax;
 mod token;
