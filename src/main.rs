@@ -4,6 +4,7 @@ mod function;
 mod interpreter;
 mod object;
 mod parser;
+mod resolver;
 mod scanner;
 mod syntax;
 mod token;
@@ -15,6 +16,7 @@ use std::process::exit;
 use error::Error;
 use interpreter::Interpreter;
 use parser::Parser;
+use resolver::Resolver;
 use scanner::Scanner;
 use syntax::AstPrinter;
 
@@ -49,6 +51,12 @@ impl Lox {
 
         let mut parser = Parser::new(tokens);
         let statements = parser.parse()?;
+
+        let mut resolver = Resolver::new(&mut self.interpreter);
+        resolver.resolve_stmts(&statements);
+
+        // TODO: check if there was an error and return.
+
         self.interpreter.interpret(&statements)?;
         Ok(())
     }

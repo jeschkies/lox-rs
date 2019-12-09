@@ -34,9 +34,13 @@ impl Function {
     ) -> Result<Object, Error> {
         match self {
             Function::Native { body, .. } => Ok(body(arguments)),
-            Function::User { params, body, closure, .. } => {
-                let mut environment =
-                    Rc::new(RefCell::new(Environment::from(closure)));
+            Function::User {
+                params,
+                body,
+                closure,
+                ..
+            } => {
+                let mut environment = Rc::new(RefCell::new(Environment::from(closure)));
                 for (param, argument) in params.iter().zip(arguments.iter()) {
                     environment
                         .borrow_mut()

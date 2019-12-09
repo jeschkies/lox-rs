@@ -12,3 +12,4 @@ Each commit corresponds to one chapter in the book:
   * [Chapter 7: Evaluating Expressions](https://github.com/jeschkies/lox-rs/commit/fd90ef985c88832c9af6f193e0614e41dd13ef28)
   * [Chapter 8: Statements and State](https://github.com/jeschkies/lox-rs/commit/941cbba900acb5876dbe6031b24ef31ff81ca99e)
   * [Chapter 9: Control Flow](https://github.com/jeschkies/lox-rs/commit/d1f8d67f65fa4d66e24e654fec7bd8d1529b124d)
+  * [Chapter 10: Functions](https://github.com/jeschkies/lox-rs/commit/0e10d13944a6cd77d37f9cdf393ed81ba9573172)
