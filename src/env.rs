@@ -33,12 +33,18 @@ impl Environment {
 
     fn ancestor(&self, distance: usize) -> Rc<RefCell<Environment>> {
         // Get first ancestor
-        let parent= self.enclosing.clone().expect(&format!("No enclosing environment at {}", 1));
+        let parent = self
+            .enclosing
+            .clone()
+            .expect(&format!("No enclosing environment at {}", 1));
         let mut environment = Rc::clone(&parent);
 
         // Get next ancestors
         for i in 1..distance {
-            let parent= self.enclosing.clone().expect(&format!("No enclosing environment at {}", i));
+            let parent = self
+                .enclosing
+                .clone()
+                .expect(&format!("No enclosing environment at {}", i));
             environment = Rc::clone(&parent);
         }
         environment
@@ -46,20 +52,32 @@ impl Environment {
 
     pub fn get_at(&self, distance: usize, name: &Token) -> Result<Object, Error> {
         let key = &*name.lexeme;
-        Ok(self
-            .ancestor(distance)
-            .borrow()
-            .values
-            .get(key)
-            .expect(&format!("Undefined variable '{}'", key))
-            .clone())
+        if distance > 0 {
+            Ok(self
+                .ancestor(distance)
+                .borrow()
+                .values
+                .get(key)
+                .expect(&format!("Undefined variable '{}'", key))
+                .clone())
+        } else {
+            Ok(self
+                .values
+                .get(key)
+                .expect(&format!("Undefined variable '{}'", key))
+                .clone())
+        }
     }
 
     pub fn assign_at(&mut self, distance: usize, name: &Token, value: Object) -> Result<(), Error> {
-        self.ancestor(distance)
-            .borrow_mut()
-            .values
-            .insert(name.lexeme.clone(), value);
+        if distance > 0 {
+            self.ancestor(distance)
+                .borrow_mut()
+                .values
+                .insert(name.lexeme.clone(), value);
+        } else {
+            self.values.insert(name.lexeme.clone(), value);
+        }
         Ok(())
     }
 

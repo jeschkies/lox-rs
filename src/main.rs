@@ -55,6 +55,8 @@ impl Lox {
         let mut resolver = Resolver::new(&mut self.interpreter);
         resolver.resolve_stmts(&statements);
 
+        // TODO: check if there was an error and return.
+
         self.interpreter.interpret(&statements)?;
         Ok(())
     }

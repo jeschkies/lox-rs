@@ -6,9 +6,16 @@ use crate::token::Token;
 
 use std::collections::HashMap;
 
+#[derive(Debug, Clone)]
+enum FunctionType {
+    None,
+    Function,
+}
+
 pub struct Resolver<'i> {
     interpreter: &'i mut Interpreter,
     scopes: Vec<HashMap<String, bool>>,
+    current_function: FunctionType,
 }
 
 impl<'i> Resolver<'i> {
@@ -16,6 +23,7 @@ impl<'i> Resolver<'i> {
         Resolver {
             interpreter: interpreter,
             scopes: Vec::new(),
+            current_function: FunctionType::None,
         }
     }
 
@@ -44,6 +52,12 @@ impl<'i> Resolver<'i> {
     fn declare(&mut self, name: &Token) {
         match self.scopes.last_mut() {
             Some(ref mut scope) => {
+                if (scope.contains_key(&name.lexeme)) {
+                    parser_error(
+                        name,
+                        "Variable with this name already declared in this scope.",
+                    );
+                }
                 scope.insert(name.lexeme.clone(), false);
             }
             None => (),
@@ -59,7 +73,10 @@ impl<'i> Resolver<'i> {
         };
     }
 
-    fn resolve_function(&mut self, params: &Vec<Token>, body: &Vec<Stmt>) {
+    fn resolve_function(&mut self, params: &Vec<Token>, body: &Vec<Stmt>, tpe: FunctionType) {
+        let enclosing_function = self.current_function.clone();
+        self.current_function = tpe;
+
         self.begin_scope();
         for param in params {
             self.declare(param);
@@ -67,6 +84,7 @@ impl<'i> Resolver<'i> {
         }
         self.resolve_stmts(body);
         self.end_scope();
+        self.current_function = enclosing_function;
     }
 
     fn resolve_local(&mut self, name: &Token) {
@@ -169,7 +187,7 @@ impl<'i> stmt::Visitor<()> for Resolver<'i> {
         self.declare(name);
         self.define(name);
 
-        self.resolve_function(params, body);
+        self.resolve_function(params, body, FunctionType::Function);
         Ok(())
     }
 
@@ -193,6 +211,10 @@ impl<'i> stmt::Visitor<()> for Resolver<'i> {
     }
 
     fn visit_return_stmt(&mut self, keyword: &Token, value: &Option<Expr>) -> Result<(), Error> {
+        if let FunctionType::None = self.current_function {
+            parser_error(keyword, "Cannot return from top-level code.");
+        }
+
         if let Some(return_value) = value {
             self.resolve_expr(return_value);
         }
