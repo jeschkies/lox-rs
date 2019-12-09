@@ -18,3 +18,13 @@ print a;
 print b;
 print c;
 
+var a = "global";
+{
+  fun showA() {
+    print a;
+  }
+
+  showA();
+  var a = "block";
+  showA();
+}

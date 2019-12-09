@@ -274,7 +274,14 @@ impl expr::Visitor<Object> for Interpreter {
 
     fn visit_assign_expr(&mut self, name: &Token, value: &Expr) -> Result<Object, Error> {
         let v = self.evaluate(value)?;
-        self.environment.borrow_mut().assign(name, v.clone())?;
+
+        if let Some(distance) = self.locals.get(name) {
+            self.environment
+                .borrow_mut()
+                .assign_at(*distance, name, v.clone())?;
+        } else {
+            self.environment.borrow_mut().assign(name, v.clone())?;
+        }
         Ok(v)
     }
 }

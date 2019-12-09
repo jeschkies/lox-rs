@@ -6,13 +6,13 @@ use crate::token::Token;
 
 use std::collections::HashMap;
 
-struct Resolver {
-    interpreter: Interpreter,
+pub struct Resolver<'i> {
+    interpreter: &'i mut Interpreter,
     scopes: Vec<HashMap<String, bool>>,
 }
 
-impl Resolver {
-    fn new(interpreter: Interpreter) -> Self {
+impl<'i> Resolver<'i> {
+    pub fn new(interpreter: &'i mut Interpreter) -> Self {
         Resolver {
             interpreter: interpreter,
             scopes: Vec::new(),
@@ -23,7 +23,7 @@ impl Resolver {
         statement.accept(self);
     }
 
-    fn resolve_stmts(&mut self, statements: &Vec<Stmt>) {
+    pub fn resolve_stmts(&mut self, statements: &Vec<Stmt>) {
         for statement in statements {
             self.resolve_stmt(statement);
         }
@@ -45,7 +45,7 @@ impl Resolver {
         match self.scopes.last_mut() {
             Some(ref mut scope) => {
                 scope.insert(name.lexeme.clone(), false);
-            },
+            }
             None => (),
         };
     }
@@ -54,7 +54,7 @@ impl Resolver {
         match self.scopes.last_mut() {
             Some(ref mut scope) => {
                 scope.insert(name.lexeme.clone(), true);
-            },
+            }
             None => (),
         };
     }
@@ -78,7 +78,7 @@ impl Resolver {
     }
 }
 
-impl expr::Visitor<()> for Resolver {
+impl<'i> expr::Visitor<()> for Resolver<'i> {
     fn visit_assign_expr(&mut self, name: &Token, value: &Expr) -> Result<(), Error> {
         self.resolve_expr(value);
         self.resolve_local(name);
@@ -147,7 +147,7 @@ impl expr::Visitor<()> for Resolver {
     }
 }
 
-impl stmt::Visitor<()> for Resolver {
+impl<'i> stmt::Visitor<()> for Resolver<'i> {
     fn visit_block_stmt(&mut self, statements: &Vec<Stmt>) -> Result<(), Error> {
         self.begin_scope();
         self.resolve_stmts(statements);

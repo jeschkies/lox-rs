@@ -16,6 +16,7 @@ use std::process::exit;
 use error::Error;
 use interpreter::Interpreter;
 use parser::Parser;
+use resolver::Resolver;
 use scanner::Scanner;
 use syntax::AstPrinter;
 
@@ -50,6 +51,10 @@ impl Lox {
 
         let mut parser = Parser::new(tokens);
         let statements = parser.parse()?;
+
+        let mut resolver = Resolver::new(&mut self.interpreter);
+        resolver.resolve_stmts(&statements);
+
         self.interpreter.interpret(&statements)?;
         Ok(())
     }
