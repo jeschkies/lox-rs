@@ -91,6 +91,7 @@ impl Interpreter {
     fn stringify(&self, object: Object) -> String {
         match object {
             Object::Boolean(b) => b.to_string(),
+            Object::Class { name } => name,
             Object::Callable(f) => f.to_string(),
             Object::Null => "nil".to_string(),
             Object::Number(n) => n.to_string(),
@@ -292,6 +293,13 @@ impl stmt::Visitor<()> for Interpreter {
             statements,
             Rc::new(RefCell::new(Environment::from(&self.environment))),
         );
+        Ok(())
+    }
+
+    fn visit_class_stmt(&mut self, name: &Token, methods: &Vec<Stmt>) -> Result<(), Error> {
+        self.environment.borrow_mut().define(name.lexeme.clone(), Object::Null);
+        let class = Object::Class { name: name.lexeme.clone() };
+        self.environment.borrow_mut().assign(name, class);
         Ok(())
     }
 

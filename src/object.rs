@@ -4,6 +4,9 @@ use crate::function::Function;
 #[derive(Debug, Clone)]
 pub enum Object {
     Boolean(bool),
+    Class { // Called LoxClass in book.
+        name: String,
+    },
     Callable(Function),
     Null,
     Number(f64),

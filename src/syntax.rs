@@ -133,6 +133,10 @@ pub enum Stmt {
     Block {
         statements: Vec<Stmt>,
     },
+    Class {
+        name: Token,
+        methods: Vec<Stmt>, // Assume that all are Stmt::Function
+    },
     Expression {
         expression: Expr,
     },
@@ -168,6 +172,7 @@ impl Stmt {
     pub fn accept<R>(&self, visitor: &mut stmt::Visitor<R>) -> Result<R, Error> {
         match self {
             Stmt::Block { statements } => visitor.visit_block_stmt(statements),
+            Stmt::Class { name, methods } => visitor.visit_class_stmt(name, methods),
             Stmt::Expression { expression } => visitor.visit_expression_stmt(expression),
             Stmt::Function { name, params, body } => {
                 visitor.visit_function_stmt(name, params, body)
@@ -193,7 +198,7 @@ pub mod stmt {
 
     pub trait Visitor<R> {
         fn visit_block_stmt(&mut self, statements: &Vec<Stmt>) -> Result<R, Error>;
-        //        fn visit_class_stmt(&self, Class stmt); TODO: Classes chapter
+        fn visit_class_stmt(&mut self, name: &Token, methods: &Vec<Stmt>) -> Result<R, Error>;
         fn visit_expression_stmt(&mut self, expression: &Expr) -> Result<R, Error>;
         fn visit_function_stmt(
             &mut self,

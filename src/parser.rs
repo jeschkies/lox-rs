@@ -41,6 +41,8 @@ impl<'t> Parser<'t> {
     fn declaration(&mut self) -> Result<Stmt, Error> {
         let statement = if matches!(self, TokenType::Var) {
             self.var_declaration()
+        } else if matches!(self, TokenType::Class) {
+            self.class_declaration()
         } else if matches!(self, TokenType::Fun) {
             self.function("function")
         } else {
@@ -54,6 +56,19 @@ impl<'t> Parser<'t> {
             }
             other => other,
         }
+    }
+
+    fn class_declaration(&mut self) -> Result<Stmt, Error> {
+        let name = self.consume(TokenType::Identifier, "Expect class name.")?;
+        self.consume(TokenType::LeftBrace, "Expect '{' before class body,")?;
+
+        let mut methods: Vec<Stmt> = Vec::new();
+        while !self.check(TokenType::RightBrace) && !self.is_at_end() {
+            methods.push(self.function("method")?);
+        }
+
+        self.consume(TokenType::RightBrace, "Expect '}' after class body.")?;
+        Ok(Stmt::Class { name, methods })
     }
 
     fn statement(&mut self) -> Result<Stmt, Error> {
@@ -153,7 +168,6 @@ impl<'t> Parser<'t> {
 
     fn return_statement(&mut self) -> Result<Stmt, Error> {
         let keyword: Token = self.previous().clone();
-        println!("keyword: {}", keyword);
         let value = if !self.check(TokenType::Semicolon) {
             Some(self.expression()?)
         } else {
