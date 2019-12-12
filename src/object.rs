@@ -4,10 +4,15 @@ use crate::function::Function;
 #[derive(Debug, Clone)]
 pub enum Object {
     Boolean(bool),
-    Class { // Called LoxClass in book.
-        name: String,
-    },
+
+    // Called LoxClass in book.
+    Class { name: String },
+
     Callable(Function),
+
+    // Called LoxInstance in book.
+    Instance { name: String },
+
     Null,
     Number(f64),
     String(String),

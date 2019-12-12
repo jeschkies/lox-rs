@@ -93,6 +93,7 @@ impl Interpreter {
             Object::Boolean(b) => b.to_string(),
             Object::Class { name } => name,
             Object::Callable(f) => f.to_string(),
+            Object::Instance { name } => format!("{} instance", name),
             Object::Null => "nil".to_string(),
             Object::Number(n) => n.to_string(),
             Object::String(s) => s,
@@ -201,25 +202,31 @@ impl expr::Visitor<Object> for Interpreter {
             .collect();
         let args = argument_values?;
 
-        if let Object::Callable(function) = callee_value {
-            let args_size = args.len();
-            if args_size != function.arity() {
-                Err(Error::Runtime {
-                    token: paren.clone(),
-                    message: format!(
-                        "Expected {} arguments but got {}.",
-                        function.arity(),
-                        args_size
-                    ),
-                })
-            } else {
-                function.call(self, &args)
+        match callee_value {
+            Object::Callable(function) => {
+                let args_size = args.len();
+                if args_size != function.arity() {
+                    Err(Error::Runtime {
+                        token: paren.clone(),
+                        message: format!(
+                            "Expected {} arguments but got {}.",
+                            function.arity(),
+                            args_size
+                        ),
+                    })
+                } else {
+                    function.call(self, &args)
+                }
             }
-        } else {
-            Err(Error::Runtime {
+            Object::Class { name } => {
+                // This is the call method of a class.
+                // TODO: check arity
+                Ok(Object::Instance { name })
+            }
+            _ => Err(Error::Runtime {
                 token: paren.clone(),
                 message: "Can only call functions and classes.".to_string(),
-            })
+            }),
         }
     }
 
@@ -297,8 +304,12 @@ impl stmt::Visitor<()> for Interpreter {
     }
 
     fn visit_class_stmt(&mut self, name: &Token, methods: &Vec<Stmt>) -> Result<(), Error> {
-        self.environment.borrow_mut().define(name.lexeme.clone(), Object::Null);
-        let class = Object::Class { name: name.lexeme.clone() };
+        self.environment
+            .borrow_mut()
+            .define(name.lexeme.clone(), Object::Null);
+        let class = Object::Class {
+            name: name.lexeme.clone(),
+        };
         self.environment.borrow_mut().assign(name, class);
         Ok(())
     }
