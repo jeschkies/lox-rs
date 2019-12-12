@@ -93,7 +93,7 @@ impl Interpreter {
             Object::Boolean(b) => b.to_string(),
             Object::Class { name } => name,
             Object::Callable(f) => f.to_string(),
-            Object::Instance { name } => format!("{} instance", name),
+            Object::Instance { name, .. } => format!("{} instance", name),
             Object::Null => "nil".to_string(),
             Object::Number(n) => n.to_string(),
             Object::String(s) => s,
@@ -221,12 +221,39 @@ impl expr::Visitor<Object> for Interpreter {
             Object::Class { name } => {
                 // This is the call method of a class.
                 // TODO: check arity
-                Ok(Object::Instance { name })
+                Ok(Object::Instance {
+                    name: name,
+                    fields: HashMap::new(),
+                })
             }
             _ => Err(Error::Runtime {
                 token: paren.clone(),
                 message: "Can only call functions and classes.".to_string(),
             }),
+        }
+    }
+
+    fn visit_get_expr(&mut self, object: &Expr, name: &Token) -> Result<Object, Error> {
+        println!("Evaluate get expression");
+        let object = self.evaluate(object)?;
+        if let Object::Instance { fields, .. } = object {
+            println!("got fields: {:?}", fields);
+            match fields.get(&name.lexeme) {
+                Some(field) => {
+                    println!("Got field {}:{:?}", name.lexeme, field);
+                    Ok(field.clone())
+                },
+                None => Err(Error::Runtime {
+                    token: name.clone(),
+                    message: format!("Undefined property '{}'.", name.lexeme),
+                }),
+            }
+        } else {
+            println!("object is not a class instance");
+            Err(Error::Runtime {
+                token: name.clone(),
+                message: "Only instances have properties.".to_string(),
+            })
         }
     }
 
@@ -261,6 +288,22 @@ impl expr::Visitor<Object> for Interpreter {
             }
         }
         self.evaluate(right)
+    }
+
+    fn visit_set_expr(&mut self, object: &Expr, property_name: &Token, value: &Expr) -> Result<Object, Error> {
+        let mut object = self.evaluate(object)?;
+
+        if let Object::Instance { mut fields, name } = object {
+            let value = self.evaluate(value)?;
+            println!("Set {} to {:?}", property_name, value);
+            fields.insert(property_name.lexeme.clone(), value.clone());
+            // TODO: We are not modifying the actual object :/
+            let r = Object::Instance { name, fields };
+            println!("Returning {:?}", r);
+            Ok(r)
+        } else {
+            Err(Error::Runtime { token: property_name.clone(), message: "Only instances have fields.".to_string()})
+        }
     }
 
     fn visit_unary_expr(&mut self, operator: &Token, right: &Expr) -> Result<Object, Error> {

@@ -9,3 +9,6 @@ print DevonshireCream;
 class Bagel {}
 var bagel = Bagel();
 print bagel;
+
+bagel.topping = "cream";
+print "Topping: " + bagel.topping;

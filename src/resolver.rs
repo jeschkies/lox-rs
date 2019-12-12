@@ -127,6 +127,11 @@ impl<'i> expr::Visitor<()> for Resolver<'i> {
         Ok(())
     }
 
+    fn visit_get_expr(&mut self, object: &Expr, name: &Token) -> Result<(), Error> {
+        self.resolve_expr(object);
+        Ok(())
+    }
+
     fn visit_grouping_expr(&mut self, expression: &Expr) -> Result<(), Error> {
         self.resolve_expr(expression);
         Ok(())
@@ -144,6 +149,12 @@ impl<'i> expr::Visitor<()> for Resolver<'i> {
     ) -> Result<(), Error> {
         self.resolve_expr(left);
         self.resolve_expr(right);
+        Ok(())
+    }
+
+    fn visit_set_expr(&mut self, object: &Expr, name: &Token, value: &Expr) -> Result<(), Error> {
+        self.resolve_expr(value);
+        self.resolve_expr(object);
         Ok(())
     }
 

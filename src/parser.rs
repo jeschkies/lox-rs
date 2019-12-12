@@ -260,6 +260,12 @@ impl<'t> Parser<'t> {
 
             if let Expr::Variable { name } = expr {
                 return Ok(Expr::Assign { name, value });
+            } else if let Expr::Get { object, name } = expr {
+                return Ok(Expr::Set {
+                    object,
+                    name,
+                    value,
+                });
             }
 
             // We are just reporting the error but not return them.
@@ -458,6 +464,12 @@ impl<'t> Parser<'t> {
         loop {
             if matches!(self, TokenType::LeftParen) {
                 expr = self.finish_call(expr)?;
+            } else if matches!(self, TokenType::Dot) {
+                let name = self.consume(TokenType::Identifier, "Expect property after '.'.")?;
+                expr = Expr::Get {
+                    object: Box::new(expr),
+                    name: name,
+                }
             } else {
                 break;
             }

@@ -1,17 +1,24 @@
 use crate::function::Function;
 
+use std::collections::HashMap;
+
 /// A simple representation of an Lox object akin to a Java `Object`.
 #[derive(Debug, Clone)]
 pub enum Object {
     Boolean(bool),
 
     // Called LoxClass in book.
-    Class { name: String },
+    Class {
+        name: String,
+    },
 
     Callable(Function),
 
     // Called LoxInstance in book.
-    Instance { name: String },
+    Instance {
+        name: String,
+        fields: HashMap<String, Object>,
+    },
 
     Null,
     Number(f64),
