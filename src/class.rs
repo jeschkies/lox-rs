@@ -1,4 +1,5 @@
 use crate::error::Error;
+use crate::function::Function;
 use crate::object::Object;
 use crate::token::Token;
 
@@ -9,6 +10,14 @@ use std::rc::Rc;
 #[derive(Debug)]
 pub struct LoxClass {
     pub name: String,
+    pub methods: HashMap<String, Function>,
+}
+
+impl LoxClass {
+
+    fn find_method(&self, name: &String) -> Option<&Function> {
+        self.methods.get(name)
+    }
 }
 
 #[derive(Debug)]
@@ -28,12 +37,15 @@ impl LoxInstance {
     }
 
     pub fn get(&self, name: &Token) -> Result<Object, Error> {
-        match self.fields.get(&name.lexeme) {
-            Some(field) => Ok(field.clone()),
-            None => Err(Error::Runtime {
+        if let Some(field) = self.fields.get(&name.lexeme) {
+            Ok(field.clone())
+        } else if let Some(method) = self.class.borrow().find_method(&name.lexeme) {
+            Ok(Object::Callable(method.clone()))
+        } else {
+            Err(Error::Runtime {
                 token: name.clone(),
                 message: format!("Undefined property '{}'.", name.lexeme),
-            }),
+            })
         }
     }
 

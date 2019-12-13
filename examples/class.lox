@@ -12,3 +12,11 @@ print bagel;
 
 bagel.topping = "cream";
 print "Topping: " + bagel.topping;
+
+class Bacon {
+  eat() {
+    print "Crunch crunch crunch!";
+  }
+}
+
+Bacon().eat();

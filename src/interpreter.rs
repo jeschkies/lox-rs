@@ -94,7 +94,9 @@ impl Interpreter {
             Object::Boolean(b) => b.to_string(),
             Object::Class(class) => class.borrow().name.clone(),
             Object::Callable(f) => f.to_string(),
-            Object::Instance(instance) => format!("{} instance", instance.borrow().class.borrow().name),
+            Object::Instance(instance) => {
+                format!("{} instance", instance.borrow().class.borrow().name)
+            }
             Object::Null => "nil".to_string(),
             Object::Number(n) => n.to_string(),
             Object::String(s) => s,
@@ -337,15 +339,32 @@ impl stmt::Visitor<()> for Interpreter {
         Ok(())
     }
 
-    fn visit_class_stmt(&mut self, name: &Token, methods: &Vec<Stmt>) -> Result<(), Error> {
+    fn visit_class_stmt(&mut self, class_name: &Token, methods: &Vec<Stmt>) -> Result<(), Error> {
         self.environment
             .borrow_mut()
-            .define(name.lexeme.clone(), Object::Null);
+            .define(class_name.lexeme.clone(), Object::Null);
+
+        let mut class_methods: HashMap<String, Function> = HashMap::new();
+        for method in methods {
+            if let Stmt::Function { name, params, body } = method {
+                let function = Function::User {
+                    name: name.clone(),
+                    params: params.clone(),
+                    body: body.clone(),
+                    closure: Rc::clone(&self.environment),
+                };
+                class_methods.insert(name.lexeme.clone(), function);
+            } else {
+                unreachable!()
+            }
+        }
+
         let lox_class = LoxClass {
-            name: name.lexeme.clone(),
+            name: class_name.lexeme.clone(),
+            methods: class_methods,
         };
         let class = Object::Class(Rc::new(RefCell::new(lox_class)));
-        self.environment.borrow_mut().assign(name, class);
+        self.environment.borrow_mut().assign(class_name, class);
         Ok(())
     }
 

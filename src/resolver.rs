@@ -10,6 +10,7 @@ use std::collections::HashMap;
 enum FunctionType {
     None,
     Function,
+    Method,
 }
 
 pub struct Resolver<'i> {
@@ -187,6 +188,21 @@ impl<'i> stmt::Visitor<()> for Resolver<'i> {
     fn visit_class_stmt(&mut self, name: &Token, methods: &Vec<Stmt>) -> Result<(), Error> {
         self.declare(name);
         self.define(name);
+
+        for method in methods {
+            if let Stmt::Function {
+                name,
+                params,
+                body,
+            } = method
+            {
+                let declaration = FunctionType::Method;
+                self.resolve_function(params, body, declaration);
+            } else {
+                unreachable!()
+            }
+        }
+
         Ok(())
     }
 
