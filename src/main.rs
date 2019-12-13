@@ -1,3 +1,4 @@
+mod class;
 mod env;
 mod error;
 mod function;

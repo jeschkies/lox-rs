@@ -139,7 +139,8 @@ pub mod expr {
             operator: &Token,
             right: &Expr,
         ) -> Result<R, Error>;
-        fn visit_set_expr(&mut self, object: &Expr, name: &Token, value: &Expr) -> Result<R, Error>;
+        fn visit_set_expr(&mut self, object: &Expr, name: &Token, value: &Expr)
+            -> Result<R, Error>;
         fn visit_unary_expr(&mut self, operator: &Token, right: &Expr) -> Result<R, Error>;
         fn visit_variable_expr(&mut self, name: &Token) -> Result<R, Error>;
     }
@@ -287,7 +288,12 @@ impl expr::Visitor<String> for AstPrinter {
         self.parenthesize(operator.lexeme.clone(), vec![left, right])
     }
 
-    fn visit_set_expr(&mut self, object: &Expr, name: &Token, value: &Expr) -> Result<String, Error> {
+    fn visit_set_expr(
+        &mut self,
+        object: &Expr,
+        name: &Token,
+        value: &Expr,
+    ) -> Result<String, Error> {
         self.parenthesize(name.lexeme.clone(), vec![object, value])
     }
 

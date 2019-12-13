@@ -1,3 +1,4 @@
+use crate::class::LoxInstance;
 use crate::env::Environment;
 use crate::error::Error;
 use crate::function::Function;
@@ -93,7 +94,7 @@ impl Interpreter {
             Object::Boolean(b) => b.to_string(),
             Object::Class { name } => name,
             Object::Callable(f) => f.to_string(),
-            Object::Instance { name, .. } => format!("{} instance", name),
+            Object::Instance(instance) => format!("{} instance", instance.borrow().name),
             Object::Null => "nil".to_string(),
             Object::Number(n) => n.to_string(),
             Object::String(s) => s,
@@ -221,10 +222,7 @@ impl expr::Visitor<Object> for Interpreter {
             Object::Class { name } => {
                 // This is the call method of a class.
                 // TODO: check arity
-                Ok(Object::Instance {
-                    name: name,
-                    fields: HashMap::new(),
-                })
+                Ok(LoxInstance::new(name))
             }
             _ => Err(Error::Runtime {
                 token: paren.clone(),
@@ -236,18 +234,8 @@ impl expr::Visitor<Object> for Interpreter {
     fn visit_get_expr(&mut self, object: &Expr, name: &Token) -> Result<Object, Error> {
         println!("Evaluate get expression");
         let object = self.evaluate(object)?;
-        if let Object::Instance { fields, .. } = object {
-            println!("got fields: {:?}", fields);
-            match fields.get(&name.lexeme) {
-                Some(field) => {
-                    println!("Got field {}:{:?}", name.lexeme, field);
-                    Ok(field.clone())
-                },
-                None => Err(Error::Runtime {
-                    token: name.clone(),
-                    message: format!("Undefined property '{}'.", name.lexeme),
-                }),
-            }
+        if let Object::Instance(ref instance) = object {
+            instance.borrow().get(name)
         } else {
             println!("object is not a class instance");
             Err(Error::Runtime {
@@ -290,19 +278,26 @@ impl expr::Visitor<Object> for Interpreter {
         self.evaluate(right)
     }
 
-    fn visit_set_expr(&mut self, object: &Expr, property_name: &Token, value: &Expr) -> Result<Object, Error> {
+    fn visit_set_expr(
+        &mut self,
+        object: &Expr,
+        property_name: &Token,
+        value: &Expr,
+    ) -> Result<Object, Error> {
         let mut object = self.evaluate(object)?;
 
-        if let Object::Instance { mut fields, name } = object {
+        if let Object::Instance(ref instance) = object {
             let value = self.evaluate(value)?;
             println!("Set {} to {:?}", property_name, value);
-            fields.insert(property_name.lexeme.clone(), value.clone());
-            // TODO: We are not modifying the actual object :/
-            let r = Object::Instance { name, fields };
+            instance.borrow_mut().set(property_name, value);
+            let r = Object::Instance(Rc::clone(instance));
             println!("Returning {:?}", r);
             Ok(r)
         } else {
-            Err(Error::Runtime { token: property_name.clone(), message: "Only instances have fields.".to_string()})
+            Err(Error::Runtime {
+                token: property_name.clone(),
+                message: "Only instances have fields.".to_string(),
+            })
         }
     }
 
