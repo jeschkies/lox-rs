@@ -1,4 +1,4 @@
-use crate::class::LoxInstance;
+use crate::class::{LoxClass, LoxInstance};
 use crate::env::Environment;
 use crate::error::Error;
 use crate::function::Function;
@@ -92,9 +92,9 @@ impl Interpreter {
     fn stringify(&self, object: Object) -> String {
         match object {
             Object::Boolean(b) => b.to_string(),
-            Object::Class { name } => name,
+            Object::Class(class) => class.borrow().name.clone(),
             Object::Callable(f) => f.to_string(),
-            Object::Instance(instance) => format!("{} instance", instance.borrow().name),
+            Object::Instance(instance) => format!("{} instance", instance.borrow().class.borrow().name),
             Object::Null => "nil".to_string(),
             Object::Number(n) => n.to_string(),
             Object::String(s) => s,
@@ -219,10 +219,10 @@ impl expr::Visitor<Object> for Interpreter {
                     function.call(self, &args)
                 }
             }
-            Object::Class { name } => {
+            Object::Class(ref class) => {
                 // This is the call method of a class.
                 // TODO: check arity
-                Ok(LoxInstance::new(name))
+                Ok(LoxInstance::new(class))
             }
             _ => Err(Error::Runtime {
                 token: paren.clone(),
@@ -232,12 +232,10 @@ impl expr::Visitor<Object> for Interpreter {
     }
 
     fn visit_get_expr(&mut self, object: &Expr, name: &Token) -> Result<Object, Error> {
-        println!("Evaluate get expression");
         let object = self.evaluate(object)?;
         if let Object::Instance(ref instance) = object {
             instance.borrow().get(name)
         } else {
-            println!("object is not a class instance");
             Err(Error::Runtime {
                 token: name.clone(),
                 message: "Only instances have properties.".to_string(),
@@ -288,10 +286,8 @@ impl expr::Visitor<Object> for Interpreter {
 
         if let Object::Instance(ref instance) = object {
             let value = self.evaluate(value)?;
-            println!("Set {} to {:?}", property_name, value);
             instance.borrow_mut().set(property_name, value);
             let r = Object::Instance(Rc::clone(instance));
-            println!("Returning {:?}", r);
             Ok(r)
         } else {
             Err(Error::Runtime {
@@ -345,9 +341,10 @@ impl stmt::Visitor<()> for Interpreter {
         self.environment
             .borrow_mut()
             .define(name.lexeme.clone(), Object::Null);
-        let class = Object::Class {
+        let lox_class = LoxClass {
             name: name.lexeme.clone(),
         };
+        let class = Object::Class(Rc::new(RefCell::new(lox_class)));
         self.environment.borrow_mut().assign(name, class);
         Ok(())
     }

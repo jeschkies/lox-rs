@@ -1,4 +1,4 @@
-use crate::class::LoxInstance;
+use crate::class::{LoxClass, LoxInstance};
 use crate::function::Function;
 
 use std::cell::RefCell;
@@ -8,10 +8,7 @@ use std::rc::Rc;
 #[derive(Debug, Clone)]
 pub enum Object {
     Boolean(bool),
-
-    // Called LoxClass in book.
-    Class { name: String },
-
+    Class(Rc<RefCell<LoxClass>>),
     Callable(Function),
     Instance(Rc<RefCell<LoxInstance>>),
     Null,
