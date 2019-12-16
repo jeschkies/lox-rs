@@ -11,13 +11,14 @@ use std::mem;
 enum FunctionType {
     None,
     Function,
+    Initializer,
     Method,
 }
 
 #[derive(Debug, Clone)]
 enum ClassType {
     None,
-    Class
+    Class,
 }
 
 pub struct Resolver<'i> {
@@ -168,7 +169,7 @@ impl<'i> expr::Visitor<()> for Resolver<'i> {
     }
 
     fn visit_this_expr(&mut self, keyword: &Token) -> Result<(), Error> {
-        if let ClassType::None = self.current_class{
+        if let ClassType::None = self.current_class {
             parser_error(keyword, "Cannot use 'this' outside of a class.");
         } else {
             self.resolve_local(keyword);
@@ -216,7 +217,11 @@ impl<'i> stmt::Visitor<()> for Resolver<'i> {
 
         for method in methods {
             if let Stmt::Function { name, params, body } = method {
-                let declaration = FunctionType::Method;
+                let declaration = if name.lexeme == "init" {
+                    FunctionType::Initializer
+                } else {
+                    FunctionType::Method
+                };
                 self.resolve_function(params, body, declaration);
             } else {
                 unreachable!()
@@ -273,6 +278,9 @@ impl<'i> stmt::Visitor<()> for Resolver<'i> {
         }
 
         if let Some(return_value) = value {
+            if let FunctionType::Initializer = self.current_function {
+                parser_error(keyword, "Cannot return value from initializer.");
+            }
             self.resolve_expr(return_value);
         }
         Ok(())

@@ -223,8 +223,24 @@ impl expr::Visitor<Object> for Interpreter {
             }
             Object::Class(ref class) => {
                 // This is the call method of a class.
-                // TODO: check arity
-                Ok(LoxInstance::new(class))
+                let args_size = args.len();
+                let instance = LoxInstance::new(class);
+                if let Some(initializer) = class.borrow().find_method("init") {
+                    if args_size != initializer.arity() {
+                        return Err(Error::Runtime {
+                            token: paren.clone(),
+                            message: format!(
+                                "Expected {} arguments but got {}.",
+                                initializer.arity(),
+                                args_size
+                            ),
+                        });
+                    } else {
+                        initializer.bind(instance.clone()).call(self, &args)?;
+                    }
+                }
+
+                Ok(instance)
             }
             _ => Err(Error::Runtime {
                 token: paren.clone(),
@@ -356,6 +372,7 @@ impl stmt::Visitor<()> for Interpreter {
                     params: params.clone(),
                     body: body.clone(),
                     closure: Rc::clone(&self.environment),
+                    is_initializer: name.lexeme == "init",
                 };
                 class_methods.insert(name.lexeme.clone(), function);
             } else {
@@ -388,6 +405,7 @@ impl stmt::Visitor<()> for Interpreter {
             params: params.clone(),
             body: body.clone(),
             closure: Rc::clone(&self.environment),
+            is_initializer: false,
         };
         self.environment
             .borrow_mut()

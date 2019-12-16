@@ -6,11 +6,16 @@ class DevonshireCream {
 
 print DevonshireCream;
 
-class Bagel {}
+class Bagel {
+  init() {
+    this.topping = "cream";
+  }
+}
 var bagel = Bagel();
 print bagel;
+print "Topping: " + bagel.topping;
 
-bagel.topping = "cream";
+bagel.topping = "whipped cream";
 print "Topping: " + bagel.topping;
 
 class Bacon {
