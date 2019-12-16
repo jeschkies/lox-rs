@@ -55,6 +55,29 @@ impl Function {
         }
     }
 
+    pub fn bind(&self, instance: Object) -> Self {
+        match self {
+            Function::Native { body, .. } => unreachable!(),
+            Function::User {
+                name,
+                params,
+                body,
+                closure,
+            } => {
+                let mut environment = Rc::new(RefCell::new(Environment::from(closure)));
+                environment
+                    .borrow_mut()
+                    .define("this".to_string(), instance);
+                Function::User {
+                    name: name.clone(),
+                    params: params.clone(),
+                    body: body.clone(),
+                    closure: environment,
+                }
+            }
+        }
+    }
+
     pub fn arity(&self) -> usize {
         match self {
             Function::Native { arity, .. } => *arity,

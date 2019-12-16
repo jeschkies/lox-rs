@@ -236,7 +236,7 @@ impl expr::Visitor<Object> for Interpreter {
     fn visit_get_expr(&mut self, object: &Expr, name: &Token) -> Result<Object, Error> {
         let object = self.evaluate(object)?;
         if let Object::Instance(ref instance) = object {
-            instance.borrow().get(name)
+            instance.borrow().get(name, &object)
         } else {
             Err(Error::Runtime {
                 token: name.clone(),
@@ -297,6 +297,10 @@ impl expr::Visitor<Object> for Interpreter {
                 message: "Only instances have fields.".to_string(),
             })
         }
+    }
+
+    fn visit_this_expr(&mut self, keyword: &Token) -> Result<Object, Error> {
+        self.look_up_variable(keyword)
     }
 
     fn visit_unary_expr(&mut self, operator: &Token, right: &Expr) -> Result<Object, Error> {

@@ -7,6 +7,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::rc::Rc;
 
+#[derive(Debug)]
 pub struct Environment {
     enclosing: Option<Rc<RefCell<Environment>>>, // Parent
     values: HashMap<String, Object>,
@@ -41,7 +42,8 @@ impl Environment {
 
         // Get next ancestors
         for i in 1..distance {
-            let parent = self
+            let parent = environment
+                .borrow()
                 .enclosing
                 .clone()
                 .expect(&format!("No enclosing environment at {}", i));

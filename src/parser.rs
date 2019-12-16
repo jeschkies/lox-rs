@@ -519,6 +519,9 @@ impl<'t> Parser<'t> {
             TokenType::Number { literal } => Expr::Literal {
                 value: LiteralValue::Number(literal.clone()),
             },
+            TokenType::This => Expr::This {
+                keyword: self.peek().clone(),
+            },
             TokenType::Identifier => Expr::Variable {
                 name: self.peek().clone(),
             },

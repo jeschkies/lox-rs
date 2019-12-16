@@ -159,6 +159,11 @@ impl<'i> expr::Visitor<()> for Resolver<'i> {
         Ok(())
     }
 
+    fn visit_this_expr(&mut self, keyword: &Token) -> Result<(), Error> {
+        self.resolve_local(keyword);
+        Ok(())
+    }
+
     fn visit_unary_expr(&mut self, operator: &Token, right: &Expr) -> Result<(), Error> {
         self.resolve_expr(right);
         Ok(())
@@ -189,19 +194,22 @@ impl<'i> stmt::Visitor<()> for Resolver<'i> {
         self.declare(name);
         self.define(name);
 
+        self.begin_scope();
+        self.scopes
+            .last_mut()
+            .expect("Scopes is empty.")
+            .insert("this".to_owned(), true);
+
         for method in methods {
-            if let Stmt::Function {
-                name,
-                params,
-                body,
-            } = method
-            {
+            if let Stmt::Function { name, params, body } = method {
                 let declaration = FunctionType::Method;
                 self.resolve_function(params, body, declaration);
             } else {
                 unreachable!()
             }
         }
+
+        self.end_scope();
 
         Ok(())
     }

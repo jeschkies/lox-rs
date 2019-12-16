@@ -14,7 +14,6 @@ pub struct LoxClass {
 }
 
 impl LoxClass {
-
     fn find_method(&self, name: &String) -> Option<&Function> {
         self.methods.get(name)
     }
@@ -36,11 +35,16 @@ impl LoxInstance {
         Object::Instance(Rc::new(RefCell::new(instance)))
     }
 
-    pub fn get(&self, name: &Token) -> Result<Object, Error> {
+    /// Returns a member field of this instance.
+    ///
+    /// # Args
+    /// * name - The name of the member.
+    /// * instance - A reference to this instance as an object.
+    pub fn get(&self, name: &Token, instance: &Object) -> Result<Object, Error> {
         if let Some(field) = self.fields.get(&name.lexeme) {
             Ok(field.clone())
         } else if let Some(method) = self.class.borrow().find_method(&name.lexeme) {
-            Ok(Object::Callable(method.clone()))
+            Ok(Object::Callable(method.bind(instance.clone())))
         } else {
             Err(Error::Runtime {
                 token: name.clone(),
