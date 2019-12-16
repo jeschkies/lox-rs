@@ -5,6 +5,7 @@ use crate::syntax::{Expr, LiteralValue, Stmt};
 use crate::token::Token;
 
 use std::collections::HashMap;
+use std::mem;
 
 #[derive(Debug, Clone)]
 enum FunctionType {
@@ -13,10 +14,17 @@ enum FunctionType {
     Method,
 }
 
+#[derive(Debug, Clone)]
+enum ClassType {
+    None,
+    Class
+}
+
 pub struct Resolver<'i> {
     interpreter: &'i mut Interpreter,
     scopes: Vec<HashMap<String, bool>>,
     current_function: FunctionType,
+    current_class: ClassType,
 }
 
 impl<'i> Resolver<'i> {
@@ -25,6 +33,7 @@ impl<'i> Resolver<'i> {
             interpreter: interpreter,
             scopes: Vec::new(),
             current_function: FunctionType::None,
+            current_class: ClassType::None,
         }
     }
 
@@ -75,8 +84,7 @@ impl<'i> Resolver<'i> {
     }
 
     fn resolve_function(&mut self, params: &Vec<Token>, body: &Vec<Stmt>, tpe: FunctionType) {
-        let enclosing_function = self.current_function.clone();
-        self.current_function = tpe;
+        let enclosing_function = mem::replace(&mut self.current_function, tpe);
 
         self.begin_scope();
         for param in params {
@@ -160,7 +168,11 @@ impl<'i> expr::Visitor<()> for Resolver<'i> {
     }
 
     fn visit_this_expr(&mut self, keyword: &Token) -> Result<(), Error> {
-        self.resolve_local(keyword);
+        if let ClassType::None = self.current_class{
+            parser_error(keyword, "Cannot use 'this' outside of a class.");
+        } else {
+            self.resolve_local(keyword);
+        }
         Ok(())
     }
 
@@ -191,6 +203,8 @@ impl<'i> stmt::Visitor<()> for Resolver<'i> {
     }
 
     fn visit_class_stmt(&mut self, name: &Token, methods: &Vec<Stmt>) -> Result<(), Error> {
+        let enclosing_class = mem::replace(&mut self.current_class, ClassType::Class);
+
         self.declare(name);
         self.define(name);
 
@@ -210,6 +224,8 @@ impl<'i> stmt::Visitor<()> for Resolver<'i> {
         }
 
         self.end_scope();
+
+        self.current_class = enclosing_class;
 
         Ok(())
     }
