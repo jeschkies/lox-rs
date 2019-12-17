@@ -3,7 +3,7 @@ use crate::error::Error;
 use crate::interpreter::Interpreter;
 use crate::object::Object;
 use crate::syntax::Stmt;
-use crate::token::Token;
+use crate::token::{Token, TokenType};
 
 use std::cell::RefCell;
 use std::fmt;
@@ -23,6 +23,7 @@ pub enum Function {
         params: Vec<Token>,
         body: Vec<Stmt>,
         closure: Rc<RefCell<Environment>>,
+        is_initializer: bool,
     },
 }
 
@@ -38,6 +39,7 @@ impl Function {
                 params,
                 body,
                 closure,
+                is_initializer,
                 ..
             } => {
                 let mut environment = Rc::new(RefCell::new(Environment::from(closure)));
@@ -47,9 +49,53 @@ impl Function {
                         .define(param.lexeme.clone(), argument.clone());
                 }
                 match interpreter.execute_block(body, environment) {
-                    Err(Error::Return { value }) => Ok(value),
+                    Err(Error::Return { value }) => {
+                        if *is_initializer {
+                            Ok(closure
+                                .borrow()
+                                .get_at(0, &Token::new(TokenType::This, "this", 0))
+                                .expect("Initializer should return 'this'."))
+                        } else {
+                            Ok(value)
+                        }
+                    },
                     Err(other) => Err(other),
-                    Ok(..) => Ok(Object::Null), // We don't have a return statement.
+                    // We don't have a return statement.
+                    Ok(..) => {
+                        if *is_initializer {
+                            Ok(closure
+                                .borrow()
+                                .get_at(0, &Token::new(TokenType::This, "this", 0))
+                                .expect("Initializer should return 'this'."))
+                        } else {
+                            Ok(Object::Null)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn bind(&self, instance: Object) -> Self {
+        match self {
+            Function::Native { body, .. } => unreachable!(),
+            Function::User {
+                name,
+                params,
+                body,
+                closure,
+                is_initializer,
+            } => {
+                let mut environment = Rc::new(RefCell::new(Environment::from(closure)));
+                environment
+                    .borrow_mut()
+                    .define("this".to_string(), instance);
+                Function::User {
+                    name: name.clone(),
+                    params: params.clone(),
+                    body: body.clone(),
+                    closure: environment,
+                    is_initializer: *is_initializer,
                 }
             }
         }

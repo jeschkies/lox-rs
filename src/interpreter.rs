@@ -1,3 +1,4 @@
+use crate::class::{LoxClass, LoxInstance};
 use crate::env::Environment;
 use crate::error::Error;
 use crate::function::Function;
@@ -91,7 +92,11 @@ impl Interpreter {
     fn stringify(&self, object: Object) -> String {
         match object {
             Object::Boolean(b) => b.to_string(),
+            Object::Class(class) => class.borrow().name.clone(),
             Object::Callable(f) => f.to_string(),
+            Object::Instance(instance) => {
+                format!("{} instance", instance.borrow().class.borrow().name)
+            }
             Object::Null => "nil".to_string(),
             Object::Number(n) => n.to_string(),
             Object::String(s) => s,
@@ -200,24 +205,58 @@ impl expr::Visitor<Object> for Interpreter {
             .collect();
         let args = argument_values?;
 
-        if let Object::Callable(function) = callee_value {
-            let args_size = args.len();
-            if args_size != function.arity() {
-                Err(Error::Runtime {
-                    token: paren.clone(),
-                    message: format!(
-                        "Expected {} arguments but got {}.",
-                        function.arity(),
-                        args_size
-                    ),
-                })
-            } else {
-                function.call(self, &args)
+        match callee_value {
+            Object::Callable(function) => {
+                let args_size = args.len();
+                if args_size != function.arity() {
+                    Err(Error::Runtime {
+                        token: paren.clone(),
+                        message: format!(
+                            "Expected {} arguments but got {}.",
+                            function.arity(),
+                            args_size
+                        ),
+                    })
+                } else {
+                    function.call(self, &args)
+                }
             }
-        } else {
-            Err(Error::Runtime {
+            Object::Class(ref class) => {
+                // This is the call method of a class.
+                let args_size = args.len();
+                let instance = LoxInstance::new(class);
+                if let Some(initializer) = class.borrow().find_method("init") {
+                    if args_size != initializer.arity() {
+                        return Err(Error::Runtime {
+                            token: paren.clone(),
+                            message: format!(
+                                "Expected {} arguments but got {}.",
+                                initializer.arity(),
+                                args_size
+                            ),
+                        });
+                    } else {
+                        initializer.bind(instance.clone()).call(self, &args)?;
+                    }
+                }
+
+                Ok(instance)
+            }
+            _ => Err(Error::Runtime {
                 token: paren.clone(),
                 message: "Can only call functions and classes.".to_string(),
+            }),
+        }
+    }
+
+    fn visit_get_expr(&mut self, object: &Expr, name: &Token) -> Result<Object, Error> {
+        let object = self.evaluate(object)?;
+        if let Object::Instance(ref instance) = object {
+            instance.borrow().get(name, &object)
+        } else {
+            Err(Error::Runtime {
+                token: name.clone(),
+                message: "Only instances have properties.".to_string(),
             })
         }
     }
@@ -253,6 +292,31 @@ impl expr::Visitor<Object> for Interpreter {
             }
         }
         self.evaluate(right)
+    }
+
+    fn visit_set_expr(
+        &mut self,
+        object: &Expr,
+        property_name: &Token,
+        value: &Expr,
+    ) -> Result<Object, Error> {
+        let mut object = self.evaluate(object)?;
+
+        if let Object::Instance(ref instance) = object {
+            let value = self.evaluate(value)?;
+            instance.borrow_mut().set(property_name, value);
+            let r = Object::Instance(Rc::clone(instance));
+            Ok(r)
+        } else {
+            Err(Error::Runtime {
+                token: property_name.clone(),
+                message: "Only instances have fields.".to_string(),
+            })
+        }
+    }
+
+    fn visit_this_expr(&mut self, keyword: &Token) -> Result<Object, Error> {
+        self.look_up_variable(keyword)
     }
 
     fn visit_unary_expr(&mut self, operator: &Token, right: &Expr) -> Result<Object, Error> {
@@ -295,6 +359,36 @@ impl stmt::Visitor<()> for Interpreter {
         Ok(())
     }
 
+    fn visit_class_stmt(&mut self, class_name: &Token, methods: &Vec<Stmt>) -> Result<(), Error> {
+        self.environment
+            .borrow_mut()
+            .define(class_name.lexeme.clone(), Object::Null);
+
+        let mut class_methods: HashMap<String, Function> = HashMap::new();
+        for method in methods {
+            if let Stmt::Function { name, params, body } = method {
+                let function = Function::User {
+                    name: name.clone(),
+                    params: params.clone(),
+                    body: body.clone(),
+                    closure: Rc::clone(&self.environment),
+                    is_initializer: name.lexeme == "init",
+                };
+                class_methods.insert(name.lexeme.clone(), function);
+            } else {
+                unreachable!()
+            }
+        }
+
+        let lox_class = LoxClass {
+            name: class_name.lexeme.clone(),
+            methods: class_methods,
+        };
+        let class = Object::Class(Rc::new(RefCell::new(lox_class)));
+        self.environment.borrow_mut().assign(class_name, class);
+        Ok(())
+    }
+
     fn visit_expression_stmt(&mut self, expression: &Expr) -> Result<(), Error> {
         self.evaluate(expression)?;
         Ok(())
@@ -311,6 +405,7 @@ impl stmt::Visitor<()> for Interpreter {
             params: params.clone(),
             body: body.clone(),
             closure: Rc::clone(&self.environment),
+            is_initializer: false,
         };
         self.environment
             .borrow_mut()

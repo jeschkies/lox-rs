@@ -41,6 +41,8 @@ impl<'t> Parser<'t> {
     fn declaration(&mut self) -> Result<Stmt, Error> {
         let statement = if matches!(self, TokenType::Var) {
             self.var_declaration()
+        } else if matches!(self, TokenType::Class) {
+            self.class_declaration()
         } else if matches!(self, TokenType::Fun) {
             self.function("function")
         } else {
@@ -54,6 +56,19 @@ impl<'t> Parser<'t> {
             }
             other => other,
         }
+    }
+
+    fn class_declaration(&mut self) -> Result<Stmt, Error> {
+        let name = self.consume(TokenType::Identifier, "Expect class name.")?;
+        self.consume(TokenType::LeftBrace, "Expect '{' before class body,")?;
+
+        let mut methods: Vec<Stmt> = Vec::new();
+        while !self.check(TokenType::RightBrace) && !self.is_at_end() {
+            methods.push(self.function("method")?);
+        }
+
+        self.consume(TokenType::RightBrace, "Expect '}' after class body.")?;
+        Ok(Stmt::Class { name, methods })
     }
 
     fn statement(&mut self) -> Result<Stmt, Error> {
@@ -153,7 +168,6 @@ impl<'t> Parser<'t> {
 
     fn return_statement(&mut self) -> Result<Stmt, Error> {
         let keyword: Token = self.previous().clone();
-        println!("keyword: {}", keyword);
         let value = if !self.check(TokenType::Semicolon) {
             Some(self.expression()?)
         } else {
@@ -246,6 +260,12 @@ impl<'t> Parser<'t> {
 
             if let Expr::Variable { name } = expr {
                 return Ok(Expr::Assign { name, value });
+            } else if let Expr::Get { object, name } = expr {
+                return Ok(Expr::Set {
+                    object,
+                    name,
+                    value,
+                });
             }
 
             // We are just reporting the error but not return them.
@@ -444,6 +464,12 @@ impl<'t> Parser<'t> {
         loop {
             if matches!(self, TokenType::LeftParen) {
                 expr = self.finish_call(expr)?;
+            } else if matches!(self, TokenType::Dot) {
+                let name = self.consume(TokenType::Identifier, "Expect property after '.'.")?;
+                expr = Expr::Get {
+                    object: Box::new(expr),
+                    name: name,
+                }
             } else {
                 break;
             }
@@ -492,6 +518,9 @@ impl<'t> Parser<'t> {
             },
             TokenType::Number { literal } => Expr::Literal {
                 value: LiteralValue::Number(literal.clone()),
+            },
+            TokenType::This => Expr::This {
+                keyword: self.peek().clone(),
             },
             TokenType::Identifier => Expr::Variable {
                 name: self.peek().clone(),

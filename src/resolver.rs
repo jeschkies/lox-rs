@@ -5,17 +5,27 @@ use crate::syntax::{Expr, LiteralValue, Stmt};
 use crate::token::Token;
 
 use std::collections::HashMap;
+use std::mem;
 
 #[derive(Debug, Clone)]
 enum FunctionType {
     None,
     Function,
+    Initializer,
+    Method,
+}
+
+#[derive(Debug, Clone)]
+enum ClassType {
+    None,
+    Class,
 }
 
 pub struct Resolver<'i> {
     interpreter: &'i mut Interpreter,
     scopes: Vec<HashMap<String, bool>>,
     current_function: FunctionType,
+    current_class: ClassType,
 }
 
 impl<'i> Resolver<'i> {
@@ -24,6 +34,7 @@ impl<'i> Resolver<'i> {
             interpreter: interpreter,
             scopes: Vec::new(),
             current_function: FunctionType::None,
+            current_class: ClassType::None,
         }
     }
 
@@ -74,8 +85,7 @@ impl<'i> Resolver<'i> {
     }
 
     fn resolve_function(&mut self, params: &Vec<Token>, body: &Vec<Stmt>, tpe: FunctionType) {
-        let enclosing_function = self.current_function.clone();
-        self.current_function = tpe;
+        let enclosing_function = mem::replace(&mut self.current_function, tpe);
 
         self.begin_scope();
         for param in params {
@@ -127,6 +137,11 @@ impl<'i> expr::Visitor<()> for Resolver<'i> {
         Ok(())
     }
 
+    fn visit_get_expr(&mut self, object: &Expr, name: &Token) -> Result<(), Error> {
+        self.resolve_expr(object);
+        Ok(())
+    }
+
     fn visit_grouping_expr(&mut self, expression: &Expr) -> Result<(), Error> {
         self.resolve_expr(expression);
         Ok(())
@@ -144,6 +159,21 @@ impl<'i> expr::Visitor<()> for Resolver<'i> {
     ) -> Result<(), Error> {
         self.resolve_expr(left);
         self.resolve_expr(right);
+        Ok(())
+    }
+
+    fn visit_set_expr(&mut self, object: &Expr, name: &Token, value: &Expr) -> Result<(), Error> {
+        self.resolve_expr(value);
+        self.resolve_expr(object);
+        Ok(())
+    }
+
+    fn visit_this_expr(&mut self, keyword: &Token) -> Result<(), Error> {
+        if let ClassType::None = self.current_class {
+            parser_error(keyword, "Cannot use 'this' outside of a class.");
+        } else {
+            self.resolve_local(keyword);
+        }
         Ok(())
     }
 
@@ -170,6 +200,38 @@ impl<'i> stmt::Visitor<()> for Resolver<'i> {
         self.begin_scope();
         self.resolve_stmts(statements);
         self.end_scope();
+        Ok(())
+    }
+
+    fn visit_class_stmt(&mut self, name: &Token, methods: &Vec<Stmt>) -> Result<(), Error> {
+        let enclosing_class = mem::replace(&mut self.current_class, ClassType::Class);
+
+        self.declare(name);
+        self.define(name);
+
+        self.begin_scope();
+        self.scopes
+            .last_mut()
+            .expect("Scopes is empty.")
+            .insert("this".to_owned(), true);
+
+        for method in methods {
+            if let Stmt::Function { name, params, body } = method {
+                let declaration = if name.lexeme == "init" {
+                    FunctionType::Initializer
+                } else {
+                    FunctionType::Method
+                };
+                self.resolve_function(params, body, declaration);
+            } else {
+                unreachable!()
+            }
+        }
+
+        self.end_scope();
+
+        self.current_class = enclosing_class;
+
         Ok(())
     }
 
@@ -216,6 +278,9 @@ impl<'i> stmt::Visitor<()> for Resolver<'i> {
         }
 
         if let Some(return_value) = value {
+            if let FunctionType::Initializer = self.current_function {
+                parser_error(keyword, "Cannot return value from initializer.");
+            }
             self.resolve_expr(return_value);
         }
         Ok(())
