@@ -168,6 +168,11 @@ impl<'i> expr::Visitor<()> for Resolver<'i> {
         Ok(())
     }
 
+    fn visit_super_expr(&mut self, keyword: &Token, _method: &Token) -> Result<(), Error> {
+        self.resolve_local(keyword);
+        Ok(())
+    }
+
     fn visit_this_expr(&mut self, keyword: &Token) -> Result<(), Error> {
         if let ClassType::None = self.current_class {
             parser_error(keyword, "Cannot use 'this' outside of a class.");
@@ -222,6 +227,12 @@ impl<'i> stmt::Visitor<()> for Resolver<'i> {
                 parser_error(superclass_name, "A class cannot inherit from itself.");
             }
             self.resolve_local(superclass_name);
+
+            self.begin_scope();
+            self.scopes
+                .last_mut()
+                .expect("Scopes is empty.")
+                .insert("super".to_owned(), true);
         }
 
         self.begin_scope();
@@ -241,6 +252,10 @@ impl<'i> stmt::Visitor<()> for Resolver<'i> {
             } else {
                 unreachable!()
             }
+        }
+
+        if superclass.is_some() {
+            self.end_scope()
         }
 
         self.end_scope();

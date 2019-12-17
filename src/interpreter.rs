@@ -113,7 +113,7 @@ impl Interpreter {
 
     fn look_up_variable(&self, name: &Token) -> Result<Object, Error> {
         if let Some(distance) = self.locals.get(name) {
-            self.environment.borrow().get_at(*distance, name)
+            self.environment.borrow().get_at(*distance, &name.lexeme)
         } else {
             self.globals.borrow().get(name)
         }
@@ -315,6 +315,30 @@ impl expr::Visitor<Object> for Interpreter {
         }
     }
 
+    fn visit_super_expr(&mut self, keyword: &Token, method: &Token) -> Result<Object, Error> {
+        let distance = self
+            .locals
+            .get(keyword)
+            .expect("No local distance for 'super'.");
+        let superclass = self.environment.borrow().get_at(*distance, "super")?;
+
+        // "this" is always one level nearer than "super"'s environment.
+        let instance = self.environment.borrow().get_at(*distance - 1, "this")?;
+
+        if let Object::Class(ref superclass) = superclass {
+            if let Some(method) = superclass.borrow().find_method(&method.lexeme) {
+                Ok(Object::Callable(method.bind(instance)))
+            } else {
+                Err(Error::Runtime {
+                    token: method.clone(),
+                    message: format!("Undefined property '{}'.", method.lexeme),
+                })
+            }
+        } else {
+            unreachable!()
+        }
+    }
+
     fn visit_this_expr(&mut self, keyword: &Token) -> Result<Object, Error> {
         self.look_up_variable(keyword)
     }
@@ -387,6 +411,13 @@ impl stmt::Visitor<()> for Interpreter {
             .borrow_mut()
             .define(class_name.lexeme.clone(), Object::Null);
 
+        if let Some(ref class) = superclass {
+            self.environment = Rc::new(RefCell::new(Environment::from(&self.environment)));
+            self.environment
+                .borrow_mut()
+                .define("super".to_string(), Object::Class(Rc::clone(class)));
+        }
+
         let mut class_methods: HashMap<String, Function> = HashMap::new();
         for method in methods {
             if let Stmt::Function { name, params, body } = method {
@@ -405,10 +436,22 @@ impl stmt::Visitor<()> for Interpreter {
 
         let lox_class = LoxClass {
             name: class_name.lexeme.clone(),
-            superclass,
+            superclass: superclass.clone(),
             methods: class_methods,
         };
         let class = Object::Class(Rc::new(RefCell::new(lox_class)));
+
+        // Pop environment again.
+        if superclass.is_some() {
+            let parent = self
+                .environment
+                .borrow()
+                .enclosing
+                .clone()
+                .expect("Superclass environment has no parent.");
+            self.environment = parent;
+        }
+
         self.environment.borrow_mut().assign(class_name, class);
         Ok(())
     }

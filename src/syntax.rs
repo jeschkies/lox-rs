@@ -38,6 +38,10 @@ pub enum Expr {
         name: Token,
         value: Box<Expr>,
     },
+    Super {
+        keyword: Token,
+        method: Token,
+    },
     This {
         keyword: Token,
     },
@@ -102,6 +106,7 @@ impl Expr {
                 name,
                 value,
             } => visitor.visit_set_expr(object, name, value),
+            Expr::Super { keyword, method } => visitor.visit_super_expr(keyword, method),
             Expr::This { keyword } => visitor.visit_this_expr(keyword),
             Expr::Unary { operator, right } => visitor.visit_unary_expr(operator, right),
             Expr::Variable { name } => visitor.visit_variable_expr(name),
@@ -145,6 +150,7 @@ pub mod expr {
         ) -> Result<R, Error>;
         fn visit_set_expr(&mut self, object: &Expr, name: &Token, value: &Expr)
             -> Result<R, Error>;
+        fn visit_super_expr(&mut self, keyword: &Token, method: &Token) -> Result<R, Error>;
         fn visit_this_expr(&mut self, keyword: &Token) -> Result<R, Error>;
         fn visit_unary_expr(&mut self, operator: &Token, right: &Expr) -> Result<R, Error>;
         fn visit_variable_expr(&mut self, name: &Token) -> Result<R, Error>;
@@ -316,7 +322,11 @@ impl expr::Visitor<String> for AstPrinter {
         self.parenthesize(name.lexeme.clone(), vec![object, value])
     }
 
-    fn visit_this_expr(&mut self, keyword: &Token) -> Result<String, Error> {
+    fn visit_super_expr(&mut self, _keyword: &Token, _method: &Token) -> Result<String, Error> {
+        Ok("super".to_string())
+    }
+
+    fn visit_this_expr(&mut self, _keyword: &Token) -> Result<String, Error> {
         Ok("this".to_string())
     }
 

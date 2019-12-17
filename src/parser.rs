@@ -531,6 +531,18 @@ impl<'t> Parser<'t> {
             TokenType::Number { literal } => Expr::Literal {
                 value: LiteralValue::Number(literal.clone()),
             },
+            TokenType::Super => {
+                let keyword = self.advance().clone();
+                self.consume(TokenType::Dot, "Expect '.' after 'super'.")?;
+                let method =
+                    self.consume(TokenType::Identifier, "Expect superclass method name.")?;
+
+                // We already advance so we cut it short here.
+                return Ok(Expr::Super {
+                    keyword: keyword,
+                    method,
+                });
+            }
             TokenType::This => Expr::This {
                 keyword: self.peek().clone(),
             },

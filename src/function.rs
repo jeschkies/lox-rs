@@ -53,7 +53,7 @@ impl Function {
                         if *is_initializer {
                             Ok(closure
                                 .borrow()
-                                .get_at(0, &Token::new(TokenType::This, "this", 0))
+                                .get_at(0, "this")
                                 .expect("Initializer should return 'this'."))
                         } else {
                             Ok(value)
@@ -65,7 +65,7 @@ impl Function {
                         if *is_initializer {
                             Ok(closure
                                 .borrow()
-                                .get_at(0, &Token::new(TokenType::This, "this", 0))
+                                .get_at(0, "this")
                                 .expect("Initializer should return 'this'."))
                         } else {
                             Ok(Object::Null)
