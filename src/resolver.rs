@@ -1,8 +1,8 @@
-use crate::error::{parser_error, Error};
+use crate::error::{report, Error};
 use crate::interpreter::Interpreter;
 use crate::syntax::{expr, stmt};
 use crate::syntax::{Expr, LiteralValue, Stmt};
-use crate::token::Token;
+use crate::token::{Token, TokenType};
 
 use std::collections::HashMap;
 use std::mem;
@@ -19,6 +19,7 @@ enum FunctionType {
 enum ClassType {
     None,
     Class,
+    Subclass,
 }
 
 pub struct Resolver<'i> {
@@ -26,6 +27,7 @@ pub struct Resolver<'i> {
     scopes: Vec<HashMap<String, bool>>,
     current_function: FunctionType,
     current_class: ClassType,
+    pub had_error: bool,
 }
 
 impl<'i> Resolver<'i> {
@@ -35,6 +37,7 @@ impl<'i> Resolver<'i> {
             scopes: Vec::new(),
             current_function: FunctionType::None,
             current_class: ClassType::None,
+            had_error: false,
         }
     }
 
@@ -61,18 +64,22 @@ impl<'i> Resolver<'i> {
     }
 
     fn declare(&mut self, name: &Token) {
+        let mut already_defined: bool = false;
         match self.scopes.last_mut() {
             Some(ref mut scope) => {
-                if (scope.contains_key(&name.lexeme)) {
-                    parser_error(
-                        name,
-                        "Variable with this name already declared in this scope.",
-                    );
-                }
+                already_defined = scope.contains_key(&name.lexeme);
                 scope.insert(name.lexeme.clone(), false);
             }
             None => (),
         };
+
+        // Report an error if the variable was already defined.
+        if already_defined {
+            self.error(
+                name,
+                "Variable with this name already declared in this scope.",
+            );
+        }
     }
 
     fn define(&mut self, name: &Token) {
@@ -103,6 +110,15 @@ impl<'i> Resolver<'i> {
                 self.interpreter.resolve(name, i);
             }
         }
+    }
+
+    fn error(&mut self, token: &Token, message: &str) {
+        if token.tpe == TokenType::EOF {
+            report(token.line, " at end", message);
+        } else {
+            report(token.line, &format!(" at '{}'", token.lexeme), message);
+        }
+        self.had_error = true;
     }
 }
 
@@ -169,13 +185,19 @@ impl<'i> expr::Visitor<()> for Resolver<'i> {
     }
 
     fn visit_super_expr(&mut self, keyword: &Token, _method: &Token) -> Result<(), Error> {
-        self.resolve_local(keyword);
+        match self.current_class {
+            ClassType::None => self.error(keyword, "Cannot use 'super' outside of a class."),
+            ClassType::Class => {
+                self.error(keyword, "Cannot use 'super' in a class with no superclass.")
+            }
+            _ => self.resolve_local(keyword),
+        }
         Ok(())
     }
 
     fn visit_this_expr(&mut self, keyword: &Token) -> Result<(), Error> {
         if let ClassType::None = self.current_class {
-            parser_error(keyword, "Cannot use 'this' outside of a class.");
+            self.error(keyword, "Cannot use 'this' outside of a class.");
         } else {
             self.resolve_local(keyword);
         }
@@ -191,7 +213,7 @@ impl<'i> expr::Visitor<()> for Resolver<'i> {
         if let Some(scope) = self.scopes.last() {
             if let Some(flag) = scope.get(&name.lexeme) {
                 if *flag == false {
-                    parser_error(name, "Cannot read local variable in its own initializer.");
+                    self.error(name, "Cannot read local variable in its own initializer.");
                 }
             }
         };
@@ -224,8 +246,10 @@ impl<'i> stmt::Visitor<()> for Resolver<'i> {
         }) = superclass
         {
             if name.lexeme == superclass_name.lexeme {
-                parser_error(superclass_name, "A class cannot inherit from itself.");
+                self.error(superclass_name, "A class cannot inherit from itself.");
             }
+
+            self.current_class = ClassType::Subclass;
             self.resolve_local(superclass_name);
 
             self.begin_scope();
@@ -304,12 +328,12 @@ impl<'i> stmt::Visitor<()> for Resolver<'i> {
 
     fn visit_return_stmt(&mut self, keyword: &Token, value: &Option<Expr>) -> Result<(), Error> {
         if let FunctionType::None = self.current_function {
-            parser_error(keyword, "Cannot return from top-level code.");
+            self.error(keyword, "Cannot return from top-level code.");
         }
 
         if let Some(return_value) = value {
             if let FunctionType::Initializer = self.current_function {
-                parser_error(keyword, "Cannot return value from initializer.");
+                self.error(keyword, "Cannot return value from initializer.");
             }
             self.resolve_expr(return_value);
         }
