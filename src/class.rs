@@ -15,8 +15,16 @@ pub struct LoxClass {
 }
 
 impl LoxClass {
-    pub fn find_method(&self, name: &str) -> Option<&Function> {
-        self.methods.get(name)
+    pub fn find_method(&self, name: &str) -> Option<Function> {
+        if self.methods.contains_key(name) {
+            self.methods.get(name).map(|f| f.clone())
+        } else {
+            if let Some(ref superclass) = self.superclass {
+                superclass.borrow().find_method(name)
+            } else {
+                None
+            }
+        }
     }
 }
 

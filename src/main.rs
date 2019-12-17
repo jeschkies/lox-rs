@@ -73,7 +73,7 @@ fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
             Err(Error::Runtime { message, .. }) => {
                 eprintln!("Error: {}", message);
                 exit(70)
-            },
+            }
             Err(Error::Parse) => exit(65),
             Err(Error::Io(_)) => unimplemented!(),
         },

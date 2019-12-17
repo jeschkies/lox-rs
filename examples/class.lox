@@ -51,13 +51,11 @@ var callback = Thing().getCallback();
 callback();
 
 class Doughnut {
-  // General doughnut stuff...
+  cook() {
+    print "Fry until golden brown.";
+  }
 }
 
-class BostonCream < Doughnut {
-  // Boston Cream-specific stuff...
-}
+class BostonCream < Doughnut {}
 
-var NotAClass = "I am totally not a class";
-
-class Subclass < NotAClass {} // ?!
+BostonCream().cook();
