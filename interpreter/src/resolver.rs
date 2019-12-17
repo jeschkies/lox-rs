@@ -132,7 +132,7 @@ impl<'i> expr::Visitor<()> for Resolver<'i> {
     fn visit_binary_expr(
         &mut self,
         left: &Expr,
-        operator: &Token,
+        _operator: &Token,
         right: &Expr,
     ) -> Result<(), Error> {
         self.resolve_expr(left);
@@ -143,7 +143,7 @@ impl<'i> expr::Visitor<()> for Resolver<'i> {
     fn visit_call_expr(
         &mut self,
         callee: &Expr,
-        paren: &Token,
+        _paren: &Token,
         arguments: &Vec<Expr>,
     ) -> Result<(), Error> {
         self.resolve_expr(callee);
@@ -153,7 +153,7 @@ impl<'i> expr::Visitor<()> for Resolver<'i> {
         Ok(())
     }
 
-    fn visit_get_expr(&mut self, object: &Expr, name: &Token) -> Result<(), Error> {
+    fn visit_get_expr(&mut self, object: &Expr, _name: &Token) -> Result<(), Error> {
         self.resolve_expr(object);
         Ok(())
     }
@@ -163,14 +163,14 @@ impl<'i> expr::Visitor<()> for Resolver<'i> {
         Ok(())
     }
 
-    fn visit_literal_expr(&self, value: &LiteralValue) -> Result<(), Error> {
+    fn visit_literal_expr(&self, _value: &LiteralValue) -> Result<(), Error> {
         Ok(())
     }
 
     fn visit_logical_expr(
         &mut self,
         left: &Expr,
-        operator: &Token,
+        _operator: &Token,
         right: &Expr,
     ) -> Result<(), Error> {
         self.resolve_expr(left);
@@ -178,7 +178,7 @@ impl<'i> expr::Visitor<()> for Resolver<'i> {
         Ok(())
     }
 
-    fn visit_set_expr(&mut self, object: &Expr, name: &Token, value: &Expr) -> Result<(), Error> {
+    fn visit_set_expr(&mut self, object: &Expr, _name: &Token, value: &Expr) -> Result<(), Error> {
         self.resolve_expr(value);
         self.resolve_expr(object);
         Ok(())
@@ -204,7 +204,7 @@ impl<'i> expr::Visitor<()> for Resolver<'i> {
         Ok(())
     }
 
-    fn visit_unary_expr(&mut self, operator: &Token, right: &Expr) -> Result<(), Error> {
+    fn visit_unary_expr(&mut self, _operator: &Token, right: &Expr) -> Result<(), Error> {
         self.resolve_expr(right);
         Ok(())
     }
