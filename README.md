@@ -15,3 +15,4 @@ Each commit corresponds to one chapter in the book:
   * [Chapter 10: Functions](https://github.com/jeschkies/lox-rs/commit/0e10d13944a6cd77d37f9cdf393ed81ba9573172)
   * [Chapter 11: Resolving and Binding](https://github.com/jeschkies/lox-rs/commit/bd2952230567df568d77855f730540462f350a45)
   * [Chapter 12: Classes](https://github.com/jeschkies/lox-rs/commit/337896b3dae4087ad889dca2f3cca32ed025134b)
+  * [Chapter 13: Inheritance](https://github.com/jeschkies/lox-rs/commit/0207ecc8fca1af20667c69cefb4fa5f277330ca3)
