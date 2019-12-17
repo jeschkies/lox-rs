@@ -14,3 +14,4 @@ Each commit corresponds to one chapter in the book:
   * [Chapter 9: Control Flow](https://github.com/jeschkies/lox-rs/commit/d1f8d67f65fa4d66e24e654fec7bd8d1529b124d)
   * [Chapter 10: Functions](https://github.com/jeschkies/lox-rs/commit/0e10d13944a6cd77d37f9cdf393ed81ba9573172)
   * [Chapter 11: Resolving and Binding](https://github.com/jeschkies/lox-rs/commit/bd2952230567df568d77855f730540462f350a45)
+  * [Chapter 12: Classes](https://github.com/jeschkies/lox-rs/commit/337896b3dae4087ad889dca2f3cca32ed025134b)

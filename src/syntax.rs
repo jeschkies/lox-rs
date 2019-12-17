@@ -38,6 +38,10 @@ pub enum Expr {
         name: Token,
         value: Box<Expr>,
     },
+    Super {
+        keyword: Token,
+        method: Token,
+    },
     This {
         keyword: Token,
     },
@@ -102,6 +106,7 @@ impl Expr {
                 name,
                 value,
             } => visitor.visit_set_expr(object, name, value),
+            Expr::Super { keyword, method } => visitor.visit_super_expr(keyword, method),
             Expr::This { keyword } => visitor.visit_this_expr(keyword),
             Expr::Unary { operator, right } => visitor.visit_unary_expr(operator, right),
             Expr::Variable { name } => visitor.visit_variable_expr(name),
@@ -145,6 +150,7 @@ pub mod expr {
         ) -> Result<R, Error>;
         fn visit_set_expr(&mut self, object: &Expr, name: &Token, value: &Expr)
             -> Result<R, Error>;
+        fn visit_super_expr(&mut self, keyword: &Token, method: &Token) -> Result<R, Error>;
         fn visit_this_expr(&mut self, keyword: &Token) -> Result<R, Error>;
         fn visit_unary_expr(&mut self, operator: &Token, right: &Expr) -> Result<R, Error>;
         fn visit_variable_expr(&mut self, name: &Token) -> Result<R, Error>;
@@ -158,7 +164,12 @@ pub enum Stmt {
     },
     Class {
         name: Token,
-        methods: Vec<Stmt>, // Assume that all are Stmt::Function
+
+        // Assume Expr::Variable
+        superclass: Option<Expr>,
+
+        // Assume that all are Stmt::Function
+        methods: Vec<Stmt>,
     },
     Expression {
         expression: Expr,
@@ -195,7 +206,11 @@ impl Stmt {
     pub fn accept<R>(&self, visitor: &mut stmt::Visitor<R>) -> Result<R, Error> {
         match self {
             Stmt::Block { statements } => visitor.visit_block_stmt(statements),
-            Stmt::Class { name, methods } => visitor.visit_class_stmt(name, methods),
+            Stmt::Class {
+                name,
+                superclass,
+                methods,
+            } => visitor.visit_class_stmt(name, superclass, methods),
             Stmt::Expression { expression } => visitor.visit_expression_stmt(expression),
             Stmt::Function { name, params, body } => {
                 visitor.visit_function_stmt(name, params, body)
@@ -221,7 +236,12 @@ pub mod stmt {
 
     pub trait Visitor<R> {
         fn visit_block_stmt(&mut self, statements: &Vec<Stmt>) -> Result<R, Error>;
-        fn visit_class_stmt(&mut self, name: &Token, methods: &Vec<Stmt>) -> Result<R, Error>;
+        fn visit_class_stmt(
+            &mut self,
+            name: &Token,
+            superclass: &Option<Expr>,
+            methods: &Vec<Stmt>,
+        ) -> Result<R, Error>;
         fn visit_expression_stmt(&mut self, expression: &Expr) -> Result<R, Error>;
         fn visit_function_stmt(
             &mut self,
@@ -302,7 +322,11 @@ impl expr::Visitor<String> for AstPrinter {
         self.parenthesize(name.lexeme.clone(), vec![object, value])
     }
 
-    fn visit_this_expr(&mut self, keyword: &Token) -> Result<String, Error> {
+    fn visit_super_expr(&mut self, _keyword: &Token, _method: &Token) -> Result<String, Error> {
+        Ok("super".to_string())
+    }
+
+    fn visit_this_expr(&mut self, _keyword: &Token) -> Result<String, Error> {
         Ok("this".to_string())
     }
 

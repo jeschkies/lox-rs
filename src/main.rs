@@ -56,7 +56,9 @@ impl Lox {
         let mut resolver = Resolver::new(&mut self.interpreter);
         resolver.resolve_stmts(&statements);
 
-        // TODO: check if there was an error and return.
+        if resolver.had_error {
+            return Ok(());
+        }
 
         self.interpreter.interpret(&statements)?;
         Ok(())
@@ -70,7 +72,10 @@ fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
         [_, file] => match lox.run_file(file) {
             Ok(_) => (),
             Err(Error::Return { .. }) => unreachable!(),
-            Err(Error::Runtime { .. }) => exit(70),
+            Err(Error::Runtime { message, .. }) => {
+                eprintln!("Error: {}", message);
+                exit(70)
+            }
             Err(Error::Parse) => exit(65),
             Err(Error::Io(_)) => unimplemented!(),
         },

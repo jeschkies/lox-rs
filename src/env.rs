@@ -9,7 +9,7 @@ use std::rc::Rc;
 
 #[derive(Debug)]
 pub struct Environment {
-    enclosing: Option<Rc<RefCell<Environment>>>, // Parent
+    pub enclosing: Option<Rc<RefCell<Environment>>>, // Parent
     values: HashMap<String, Object>,
 }
 
@@ -52,21 +52,20 @@ impl Environment {
         environment
     }
 
-    pub fn get_at(&self, distance: usize, name: &Token) -> Result<Object, Error> {
-        let key = &*name.lexeme;
+    pub fn get_at(&self, distance: usize, name: &str) -> Result<Object, Error> {
         if distance > 0 {
             Ok(self
                 .ancestor(distance)
                 .borrow()
                 .values
-                .get(key)
-                .expect(&format!("Undefined variable '{}'", key))
+                .get(name)
+                .expect(&format!("Undefined variable '{}'", name))
                 .clone())
         } else {
             Ok(self
                 .values
-                .get(key)
-                .expect(&format!("Undefined variable '{}'", key))
+                .get(name)
+                .expect(&format!("Undefined variable '{}'", name))
                 .clone())
         }
     }
