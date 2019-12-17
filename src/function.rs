@@ -58,7 +58,7 @@ impl Function {
                         } else {
                             Ok(value)
                         }
-                    },
+                    }
                     Err(other) => Err(other),
                     // We don't have a return statement.
                     Ok(..) => {

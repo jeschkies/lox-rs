@@ -359,7 +359,30 @@ impl stmt::Visitor<()> for Interpreter {
         Ok(())
     }
 
-    fn visit_class_stmt(&mut self, class_name: &Token, methods: &Vec<Stmt>) -> Result<(), Error> {
+    fn visit_class_stmt(
+        &mut self,
+        class_name: &Token,
+        maybe_superclass: &Option<Expr>,
+        methods: &Vec<Stmt>,
+    ) -> Result<(), Error> {
+        let superclass: Option<Rc<RefCell<LoxClass>>> = maybe_superclass
+            .as_ref()
+            .map(|expr| {
+                if let Object::Class(ref lox_class) = self.evaluate(expr)? {
+                    Ok(Rc::clone(lox_class))
+                } else if let Expr::Variable { name } = expr {
+                    Err(Error::Runtime {
+                        token: name.clone(),
+                        message: "Superclass must be a class.".to_string(),
+                    })
+                } else {
+                    // Superclass expression was not an `Expr::Variable` nor was the evaluated class
+                    // an `Object::Class`.
+                    unreachable!()
+                }
+            })
+            .transpose()?;
+
         self.environment
             .borrow_mut()
             .define(class_name.lexeme.clone(), Object::Null);
@@ -382,6 +405,7 @@ impl stmt::Visitor<()> for Interpreter {
 
         let lox_class = LoxClass {
             name: class_name.lexeme.clone(),
+            superclass,
             methods: class_methods,
         };
         let class = Object::Class(Rc::new(RefCell::new(lox_class)));

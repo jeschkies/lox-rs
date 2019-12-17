@@ -49,3 +49,15 @@ class Thing {
 
 var callback = Thing().getCallback();
 callback();
+
+class Doughnut {
+  // General doughnut stuff...
+}
+
+class BostonCream < Doughnut {
+  // Boston Cream-specific stuff...
+}
+
+var NotAClass = "I am totally not a class";
+
+class Subclass < NotAClass {} // ?!

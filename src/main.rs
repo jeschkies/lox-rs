@@ -70,7 +70,10 @@ fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
         [_, file] => match lox.run_file(file) {
             Ok(_) => (),
             Err(Error::Return { .. }) => unreachable!(),
-            Err(Error::Runtime { .. }) => exit(70),
+            Err(Error::Runtime { message, .. }) => {
+                eprintln!("Error: {}", message);
+                exit(70)
+            },
             Err(Error::Parse) => exit(65),
             Err(Error::Io(_)) => unimplemented!(),
         },

@@ -203,11 +203,26 @@ impl<'i> stmt::Visitor<()> for Resolver<'i> {
         Ok(())
     }
 
-    fn visit_class_stmt(&mut self, name: &Token, methods: &Vec<Stmt>) -> Result<(), Error> {
+    fn visit_class_stmt(
+        &mut self,
+        name: &Token,
+        superclass: &Option<Expr>,
+        methods: &Vec<Stmt>,
+    ) -> Result<(), Error> {
         let enclosing_class = mem::replace(&mut self.current_class, ClassType::Class);
 
         self.declare(name);
         self.define(name);
+
+        if let Some(Expr::Variable {
+            name: superclass_name,
+        }) = superclass
+        {
+            if name.lexeme == superclass_name.lexeme {
+                parser_error(superclass_name, "A class cannot inherit from itself.");
+            }
+            self.resolve_local(superclass_name);
+        }
 
         self.begin_scope();
         self.scopes

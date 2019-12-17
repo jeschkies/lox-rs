@@ -10,6 +10,7 @@ use std::rc::Rc;
 #[derive(Debug)]
 pub struct LoxClass {
     pub name: String,
+    pub superclass: Option<Rc<RefCell<LoxClass>>>,
     pub methods: HashMap<String, Function>,
 }
 
