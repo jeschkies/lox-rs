@@ -24,7 +24,7 @@ impl Chunk {
 
     /// Writ a chunk of code.
     /// Note: So far we can only write `OpCode`.
-    pub fn write_chunk<T>(&mut self, byte: T) {
+    pub fn write_chunk(&mut self, byte: OpCode) {
         if self.capacity < self.count + 1 {
             let old_capacity = self.capacity;
             self.capacity = self.grow_capacity(old_capacity);
@@ -32,11 +32,11 @@ impl Chunk {
         }
 
         unsafe {
-            let value: *const T= &byte;
+            let value: *const OpCode = &byte;
             ptr::copy_nonoverlapping(
                 value as *const u8,
                 self.code.offset(self.count as isize),
-                mem::size_of::<T>(),
+                mem::size_of::<OpCode>(),
             );
         }
         self.count += 1;
