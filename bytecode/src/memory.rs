@@ -25,4 +25,3 @@ pub fn reallocate(previous: *mut u8, old_size: usize, new_size: usize) -> *mut u
         }
     }
 }
-
