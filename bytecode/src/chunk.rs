@@ -3,6 +3,7 @@ use crate::memory::reallocate;
 use std::mem;
 use std::ptr;
 
+#[derive(Debug)]
 pub enum OpCode {
     OpReturn,
 }
@@ -71,5 +72,36 @@ impl Drop for Chunk {
         self.count = 0;
         self.capacity = 0;
         self.code = ptr::null_mut();
+    }
+}
+
+impl<'a> IntoIterator for &'a Chunk {
+    type Item = OpCode;
+    type IntoIter = ChunkIter<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+       ChunkIter { chunk: self, offset: 0}
+    }
+}
+
+pub struct ChunkIter<'a> {
+    chunk: &'a Chunk,
+    offset: usize,
+}
+
+impl<'a> Iterator for ChunkIter<'a> {
+    type Item = OpCode;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.offset < self.chunk.count {
+            let result: OpCode = OpCode::OpReturn;
+//            unsafe {
+//                result = self.chunk.code.offset(self.offset as isize).read();
+//            }
+            self.offset += 1;
+            Some(result)
+        } else {
+            None
+        }
     }
 }
