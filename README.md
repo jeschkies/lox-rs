@@ -3,9 +3,11 @@
 A [Lox](http://craftinginterpreters.com/the-lox-language.html) Interpreter in Rust based on the
 [Crafting Interpreters](http://craftinginterpreters.com) book.
 
+Run the interpreter with `cargo run -p interpreter -- examples/class.lox`. The bytecode VM is run with `cargo run -p bytcode -- examples/class.lox`.
+
 Each commit corresponds to one chapter in the book:
 
-## A Tree-Walk Interpreter
+## Part II: A Tree-Walk Interpreter
   * [Chapter 4: Scanning](https://github.com/jeschkies/lox-rs/commit/9fef15e73fdf57a3e428bb074059c7e144e257f7)
   * [Chapter 5: Representing Code](https://github.com/jeschkies/lox-rs/commit/0156a95b4bf448dbff9cb4341a2339b741a163ca)
   * [Chapter 6: Parsing Expressions](https://github.com/jeschkies/lox-rs/commit/9508c9d887a88540597d314520ae6aa045256e7d)
@@ -16,3 +18,5 @@ Each commit corresponds to one chapter in the book:
   * [Chapter 11: Resolving and Binding](https://github.com/jeschkies/lox-rs/commit/bd2952230567df568d77855f730540462f350a45)
   * [Chapter 12: Classes](https://github.com/jeschkies/lox-rs/commit/337896b3dae4087ad889dca2f3cca32ed025134b)
   * [Chapter 13: Inheritance](https://github.com/jeschkies/lox-rs/commit/0207ecc8fca1af20667c69cefb4fa5f277330ca3)
+  
+  ## Part III: A Bytecode Virtual Machine 

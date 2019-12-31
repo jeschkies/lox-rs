@@ -1,12 +1,6 @@
-[package]
-name = "lox-rs"
-version = "0.1.0"
-authors = ["Karsten Jeschkies <k@jeschkies.xyz>"]
-edition = "2018"
-build = "build.rs"
+[workspace]
 
-[dependencies]
-phf = "0.7.24"
-
-[build-dependencies]
-phf_codegen = "0.7.24"
+members = [
+    "interpreter",
+    "bytecode"
+]

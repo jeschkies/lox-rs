@@ -3,7 +3,7 @@ use crate::error::Error;
 use crate::interpreter::Interpreter;
 use crate::object::Object;
 use crate::syntax::Stmt;
-use crate::token::{Token, TokenType};
+use crate::token::Token;
 
 use std::cell::RefCell;
 use std::fmt;
@@ -42,7 +42,7 @@ impl Function {
                 is_initializer,
                 ..
             } => {
-                let mut environment = Rc::new(RefCell::new(Environment::from(closure)));
+                let environment = Rc::new(RefCell::new(Environment::from(closure)));
                 for (param, argument) in params.iter().zip(arguments.iter()) {
                     environment
                         .borrow_mut()
@@ -78,7 +78,7 @@ impl Function {
 
     pub fn bind(&self, instance: Object) -> Self {
         match self {
-            Function::Native { body, .. } => unreachable!(),
+            Function::Native { .. } => unreachable!(),
             Function::User {
                 name,
                 params,
@@ -86,7 +86,7 @@ impl Function {
                 closure,
                 is_initializer,
             } => {
-                let mut environment = Rc::new(RefCell::new(Environment::from(closure)));
+                let environment = Rc::new(RefCell::new(Environment::from(closure)));
                 environment
                     .borrow_mut()
                     .define("this".to_string(), instance);

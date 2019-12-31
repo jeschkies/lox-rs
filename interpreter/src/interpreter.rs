@@ -23,7 +23,7 @@ impl Interpreter {
         let globals = Rc::new(RefCell::new(Environment::new()));
         let clock: Object = Object::Callable(Function::Native {
             arity: 0,
-            body: Box::new(|args: &Vec<Object>| {
+            body: Box::new(|_args: &Vec<Object>| {
                 Object::Number(
                     SystemTime::now()
                         .duration_since(UNIX_EPOCH)
@@ -300,7 +300,7 @@ impl expr::Visitor<Object> for Interpreter {
         property_name: &Token,
         value: &Expr,
     ) -> Result<Object, Error> {
-        let mut object = self.evaluate(object)?;
+        let object = self.evaluate(object)?;
 
         if let Object::Instance(ref instance) = object {
             let value = self.evaluate(value)?;
@@ -452,7 +452,7 @@ impl stmt::Visitor<()> for Interpreter {
             self.environment = parent;
         }
 
-        self.environment.borrow_mut().assign(class_name, class);
+        self.environment.borrow_mut().assign(class_name, class)?;
         Ok(())
     }
 
@@ -502,7 +502,7 @@ impl stmt::Visitor<()> for Interpreter {
         Ok(())
     }
 
-    fn visit_return_stmt(&mut self, keyword: &Token, value: &Option<Expr>) -> Result<(), Error> {
+    fn visit_return_stmt(&mut self, _keyword: &Token, value: &Option<Expr>) -> Result<(), Error> {
         let return_value: Object = value
             .as_ref()
             .map(|v| self.evaluate(v))

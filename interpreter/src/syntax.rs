@@ -344,9 +344,9 @@ impl expr::Visitor<String> for AstPrinter {
 
     fn visit_call_expr(
         &mut self,
-        callee: &Expr,
-        paren: &Token,
-        arguments: &Vec<Expr>,
+        _callee: &Expr,
+        _paren: &Token,
+        _arguments: &Vec<Expr>,
     ) -> Result<String, Error> {
         unimplemented!()
     }
