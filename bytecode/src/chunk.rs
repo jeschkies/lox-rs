@@ -99,7 +99,7 @@ impl Drop for Chunk {
 }
 
 impl<'a> IntoIterator for &'a Chunk {
-    type Item = OpCode;
+    type Item = &'a OpCode;
     type IntoIter = ChunkIter<'a>;
 
     fn into_iter(self) -> Self::IntoIter {
@@ -116,13 +116,13 @@ pub struct ChunkIter<'a> {
 }
 
 impl<'a> Iterator for ChunkIter<'a> {
-    type Item = OpCode;
+    type Item = &'a OpCode;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.offset < self.chunk.count {
-            let result: OpCode;
+            let result: &OpCode;
             unsafe {
-                result = self.chunk.code.offset(self.offset as isize).read();
+                result = &*self.chunk.code.offset(self.offset as isize);
             }
             self.offset += 1;
             Some(result)
