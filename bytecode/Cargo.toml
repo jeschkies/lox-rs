@@ -4,4 +4,7 @@ version = "0.1.0"
 authors = ["Karsten Jeschkies <k@jeschkies.xyz>"]
 edition = "2018"
 
+[features]
+debug_trace_execution = []
+
 [dependencies]

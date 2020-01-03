@@ -22,7 +22,7 @@ pub struct Chunk {
     // and `OpConstant` with the index as two bytes. Rust's enum will use two bytes for both. As this
     // implementation is for learning purposes this solution should suffice. A safe Rust
     // implementation should use `Vec<OpCode>` instead.
-    code: *mut OpCode,
+    pub code: *mut OpCode,
 }
 
 impl Chunk {
@@ -122,7 +122,12 @@ impl<'a> Iterator for ChunkIter<'a> {
         if self.offset < self.chunk.count {
             let result: &OpCode;
             unsafe {
-                result = &*self.chunk.code.offset(self.offset as isize);
+                result = self
+                    .chunk
+                    .code
+                    .offset(self.offset as isize)
+                    .as_ref()
+                    .expect("Could not read Chunk.");
             }
             self.offset += 1;
             Some(result)
