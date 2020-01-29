@@ -2,6 +2,16 @@ use crate::chunk::{Chunk, OpCode};
 use crate::debug::disassemble_instruction;
 use crate::value::{print_value, Value};
 
+macro_rules! binary_op{
+    ( $sel:ident, $op:tt ) => {
+        {
+            let b = $sel.stack.pop().expect("The stack was empty!");
+            let a = $sel.stack.pop().expect("The stack was empty!");
+            $sel.stack.push(a $op b);
+        }
+    };
+}
+
 static STACK_MAX: usize = 245;
 
 pub struct VM<'a> {
@@ -54,6 +64,10 @@ impl<'a> VM<'a> {
                     let constant = self.read_constant(index);
                     self.stack.push(constant);
                 }
+                OpCode::OpAdd => binary_op!(self, +),
+                OpCode::OpSubtract => binary_op!(self, -),
+                OpCode::OpMultiply => binary_op!(self, *),
+                OpCode::OpDivide => binary_op!(self, /),
                 OpCode::OpNegate => {
                     let value = self.stack.pop().expect("The stack was empty!");
                     self.stack.push(-value);
