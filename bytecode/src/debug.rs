@@ -19,7 +19,7 @@ fn simple_instruction(name: &str) {
     println!("{}", name)
 }
 
-fn disassemble_instruction(chunk: &Chunk, op_code: OpCode, i: usize) {
+pub fn disassemble_instruction(chunk: &Chunk, op_code: &OpCode, i: usize) {
     // Note: The index is not really the offset if the op code has different sizes. For now all
     // op codes have the same size.
     print!("{:04} ", i);
@@ -30,8 +30,13 @@ fn disassemble_instruction(chunk: &Chunk, op_code: OpCode, i: usize) {
     }
     match op_code {
         OpCode::OpConstant(constant_index) => {
-            constant_instruction("OP_CONSTANT", chunk, constant_index)
+            constant_instruction("OP_CONSTANT", chunk, *constant_index)
         }
+        OpCode::OpAdd => simple_instruction("OP_ADD"),
+        OpCode::OpSubtract => simple_instruction("OP_SUBTRACT"),
+        OpCode::OpMultiply => simple_instruction("OP_MULTIPLY"),
+        OpCode::OpDivide => simple_instruction("OP_DIVIDE"),
+        OpCode::OpNegate => simple_instruction("OP_NEGATE"),
         OpCode::OpReturn => simple_instruction("OP_RETURN"),
         _ => println!("Unknown opcode {:?}", op_code),
     }

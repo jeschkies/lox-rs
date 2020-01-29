@@ -7,6 +7,11 @@ use std::ptr;
 #[derive(Debug)]
 pub enum OpCode {
     OpConstant(usize),
+    OpAdd,
+    OpSubtract,
+    OpMultiply,
+    OpDivide,
+    OpNegate,
     OpReturn,
 }
 
@@ -22,7 +27,7 @@ pub struct Chunk {
     // and `OpConstant` with the index as two bytes. Rust's enum will use two bytes for both. As this
     // implementation is for learning purposes this solution should suffice. A safe Rust
     // implementation should use `Vec<OpCode>` instead.
-    code: *mut OpCode,
+    pub code: *mut OpCode,
 }
 
 impl Chunk {
@@ -99,7 +104,7 @@ impl Drop for Chunk {
 }
 
 impl<'a> IntoIterator for &'a Chunk {
-    type Item = OpCode;
+    type Item = &'a OpCode;
     type IntoIter = ChunkIter<'a>;
 
     fn into_iter(self) -> Self::IntoIter {
@@ -116,13 +121,18 @@ pub struct ChunkIter<'a> {
 }
 
 impl<'a> Iterator for ChunkIter<'a> {
-    type Item = OpCode;
+    type Item = &'a OpCode;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.offset < self.chunk.count {
-            let result: OpCode;
+            let result: &OpCode;
             unsafe {
-                result = self.chunk.code.offset(self.offset as isize).read();
+                result = self
+                    .chunk
+                    .code
+                    .offset(self.offset as isize)
+                    .as_ref()
+                    .expect("Could not read Chunk.");
             }
             self.offset += 1;
             Some(result)

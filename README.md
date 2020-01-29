@@ -20,3 +20,4 @@ Each commit corresponds to one chapter in the book:
   * [Chapter 13: Inheritance](https://github.com/jeschkies/lox-rs/commit/0207ecc8fca1af20667c69cefb4fa5f277330ca3)
   
   ## Part III: A Bytecode Virtual Machine 
+  * [Chapter 14: Chunks of Bytecode](https://github.com/jeschkies/lox-rs/commit/bcec748d59b568c3b6ce93d6d07b40b14f44caa0)
