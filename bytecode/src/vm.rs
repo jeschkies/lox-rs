@@ -1,4 +1,5 @@
 use crate::chunk::{Chunk, OpCode};
+use crate::compiler::Compiler;
 use crate::debug::disassemble_instruction;
 use crate::value::{print_value, Value};
 
@@ -14,8 +15,8 @@ macro_rules! binary_op{
 
 static STACK_MAX: usize = 245;
 
-pub struct VM<'a> {
-    chunk: &'a Chunk,
+pub struct VM {
+    chunk: Chunk, // TODO: might use ref again
     ip: *const OpCode,
     stack: Vec<Value>,
 }
@@ -27,17 +28,21 @@ pub enum InterpretResult {
     RuntimeError,
 }
 
-impl<'a> VM<'a> {
-    pub fn new(chunk: &'a Chunk) -> Self {
+impl VM {
+    pub fn new() -> Self {
+        let chunk = Chunk::new();
+        let ip = chunk.code;
         VM {
             chunk: chunk,
-            ip: chunk.code,
+            ip: ip,
             stack: Vec::with_capacity(STACK_MAX),
         }
     }
 
-    pub fn interpret(mut self) -> InterpretResult {
-        self.run()
+    pub fn interpret(&mut self, source: &str) -> InterpretResult {
+        let compiler = Compiler;
+        compiler.compile(source);
+        InterpretResult::Ok
     }
 
     fn run(mut self) -> InterpretResult {
@@ -55,7 +60,7 @@ impl<'a> VM<'a> {
                     print!("[{:?}]", slot);
                 }
                 println!();
-                disassemble_instruction(self.chunk, &instruction, position);
+                disassemble_instruction(&self.chunk, &instruction, position);
                 position += 1;
             }
 
