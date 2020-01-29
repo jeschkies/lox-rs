@@ -2,9 +2,12 @@ use crate::chunk::{Chunk, OpCode};
 use crate::debug::disassemble_instruction;
 use crate::value::{print_value, Value};
 
+static STACK_MAX: usize = 245;
+
 pub struct VM<'a> {
     chunk: &'a Chunk,
     ip: *const OpCode,
+    stack: Vec<Value>,
 }
 
 // TODO: replace with Result<_, Error>
@@ -19,6 +22,7 @@ impl<'a> VM<'a> {
         VM {
             chunk: chunk,
             ip: chunk.code,
+            stack: Vec::new(),
         }
     }
 
@@ -36,6 +40,11 @@ impl<'a> VM<'a> {
             };
 
             if cfg!(feature = "debug_trace_execution") {
+                print!("          ");
+                for slot in &self.stack {
+                    print!("[{:?}]", slot);
+                }
+                println!();
                 disassemble_instruction(self.chunk, &instruction, position);
                 position += 1;
             }
@@ -43,10 +52,13 @@ impl<'a> VM<'a> {
             match instruction {
                 OpCode::OpConstant(index) => {
                     let constant = self.read_constant(index);
-                    print_value(constant);
-                    println!();
+                    self.stack.push(constant);
                 }
-                OpCode::OpReturn => return InterpretResult::Ok,
+                OpCode::OpReturn => {
+                    print_value(self.stack.pop().expect("The stack was empty!"));
+                    println!();
+                    return InterpretResult::Ok;
+                }
             }
         }
     }
