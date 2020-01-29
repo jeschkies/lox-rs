@@ -22,7 +22,7 @@ impl<'a> VM<'a> {
         VM {
             chunk: chunk,
             ip: chunk.code,
-            stack: Vec::new(),
+            stack: Vec::with_capacity(STACK_MAX),
         }
     }
 
@@ -53,6 +53,10 @@ impl<'a> VM<'a> {
                 OpCode::OpConstant(index) => {
                     let constant = self.read_constant(index);
                     self.stack.push(constant);
+                }
+                OpCode::OpNegate => {
+                    let value = self.stack.pop().expect("The stack was empty!");
+                    self.stack.push(-value);
                 }
                 OpCode::OpReturn => {
                     print_value(self.stack.pop().expect("The stack was empty!"));

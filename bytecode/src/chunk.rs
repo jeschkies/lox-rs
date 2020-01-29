@@ -7,6 +7,7 @@ use std::ptr;
 #[derive(Debug)]
 pub enum OpCode {
     OpConstant(usize),
+    OpNegate,
     OpReturn,
 }
 
