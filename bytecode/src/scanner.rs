@@ -93,6 +93,11 @@ impl<'a> Scanner<'a> {
             .unwrap_or_else(|| panic!("expected char at offset {}", i))
     }
 
+    /// Returns the current char.
+    fn char(&self) -> char {
+        self.char_at(self.current)
+    }
+
     fn is_at_end(&self) -> bool {
         self.char_at(self.current) == '\0'
     }
@@ -101,6 +106,18 @@ impl<'a> Scanner<'a> {
         self.current += 1;
 
         self.char_at(self.current - 1)
+    }
+
+    fn matches(&mut self, expected: char) -> bool {
+        if self.is_at_end() {
+            return false;
+        }
+        if self.char() != expected {
+            return false;
+        }
+
+        self.current += 1;
+        true
     }
 
     fn make_token(&self, typ: TokenType) -> Token {
@@ -140,6 +157,38 @@ impl<'a> Scanner<'a> {
             '+' => return self.make_token(TokenType::Plus),
             '/' => return self.make_token(TokenType::Slash),
             '*' => return self.make_token(TokenType::Star),
+            '!' => {
+                let typ = if self.matches('=') {
+                    TokenType::BangEqual
+                } else {
+                    TokenType::Bang
+                };
+                return self.make_token(typ);
+            }
+            '=' => {
+                let typ = if self.matches('=') {
+                    TokenType::EqualEqual
+                } else {
+                    TokenType::Equal
+                };
+                return self.make_token(typ);
+            }
+            '<' => {
+                let typ = if self.matches('=') {
+                    TokenType::LessEqual
+                } else {
+                    TokenType::Less
+                };
+                return self.make_token(typ);
+            }
+            '>' => {
+                let typ = if self.matches('=') {
+                    TokenType::GreaterEqual
+                } else {
+                    TokenType::Greater
+                };
+                return self.make_token(typ);
+            }
             _ => unimplemented!(),
         }
 
