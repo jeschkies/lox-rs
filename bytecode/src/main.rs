@@ -45,8 +45,7 @@ impl Lox {
     }
 
     fn run_file(&mut self, path: &str) -> Result<(), Error> {
-        // TODO: We might want handle the error kind and do a proper exit.
-        let source = fs::read_to_string(path)?; //.push_str("\0");
+        let source = format!("{}\0", fs::read_to_string(path)?);
 
         match self.vm.interpret(&source) {
             InterpretResult::CompileError => exit(65),
