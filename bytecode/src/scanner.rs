@@ -1,12 +1,5 @@
 use std::fmt;
 
-pub struct Scanner<'a> {
-    source: &'a str,
-    start: usize,
-    current: usize,
-    line: i32,
-}
-
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TokenType {
     // Single-character tokens.
@@ -72,6 +65,13 @@ pub struct Token<'b> {
     pub line: i32,
 }
 
+pub struct Scanner<'a> {
+    source: &'a str,
+    start: usize,
+    current: usize,
+    line: i32,
+}
+
 impl<'a> Scanner<'a> {
     pub fn new(source: &'a str) -> Self {
         Scanner {
@@ -82,16 +82,25 @@ impl<'a> Scanner<'a> {
         }
     }
 
+    /// Return the character at the given position.
+    ///
+    /// This panics if the given position does not point to a valid char.
+    /// This method is copied from the [Rust Regex parse](https://github.com/rust-lang/regex/blob/master/regex-syntax/src/ast/parse.rs#L461).
+    fn char_at(&self, i: usize) -> char {
+        self.source[i..]
+            .chars()
+            .next()
+            .unwrap_or_else(|| panic!("expected char at offset {}", i))
+    }
+
     fn is_at_end(&self) -> bool {
-        // TODO: `nth` is O(n). We should be faster.
-        self.source.chars().nth(self.current).unwrap() == '\0'
+        self.char_at(self.current) == '\0'
     }
 
     fn advance(&mut self) -> char {
         self.current += 1;
 
-        // TODO: `nth` is O(n). We should be faster.
-        self.source.chars().nth(self.current - 1).unwrap()
+        self.char_at(self.current - 1)
     }
 
     fn make_token(&self, typ: TokenType) -> Token {
@@ -120,17 +129,17 @@ impl<'a> Scanner<'a> {
         let c: char = self.advance();
 
         match c {
-            '('=> return self.make_token(TokenType::LeftParen),
-            ')'=> return self.make_token(TokenType::RightParen),
-            '{'=> return self.make_token(TokenType::LeftBrace),
-            '}'=> return self.make_token(TokenType::RightBrace),
-            ';'=> return self.make_token(TokenType::Semicolon),
-            ','=> return self.make_token(TokenType::Comma),
-            '.'=> return self.make_token(TokenType::Dot),
-            '-'=> return self.make_token(TokenType::Minus),
-            '+'=> return self.make_token(TokenType::Plus),
-            '/'=> return self.make_token(TokenType::Slash),
-            '*'=> return self.make_token(TokenType::Star),
+            '(' => return self.make_token(TokenType::LeftParen),
+            ')' => return self.make_token(TokenType::RightParen),
+            '{' => return self.make_token(TokenType::LeftBrace),
+            '}' => return self.make_token(TokenType::RightBrace),
+            ';' => return self.make_token(TokenType::Semicolon),
+            ',' => return self.make_token(TokenType::Comma),
+            '.' => return self.make_token(TokenType::Dot),
+            '-' => return self.make_token(TokenType::Minus),
+            '+' => return self.make_token(TokenType::Plus),
+            '/' => return self.make_token(TokenType::Slash),
+            '*' => return self.make_token(TokenType::Star),
             _ => unimplemented!(),
         }
 
