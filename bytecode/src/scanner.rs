@@ -108,6 +108,20 @@ impl<'a> Scanner<'a> {
         self.char_at(self.current - 1)
     }
 
+    /// Returns the current char without consuming it.
+    fn peek(&self) -> char {
+        self.char()
+    }
+
+    /// Return the char after the current or the null character.
+    fn peek_next(&self) -> char {
+        if self.is_at_end() {
+            '\0'
+        } else {
+            self.char_at(self.current + 1)
+        }
+    }
+
     fn matches(&mut self, expected: char) -> bool {
         if self.is_at_end() {
             return false;
@@ -136,7 +150,35 @@ impl<'a> Scanner<'a> {
         }
     }
 
+    fn skip_whitespace(&mut self) {
+        loop {
+            let c: char = self.peek();
+            match c {
+                ' ' | '\r' | '\t' => {
+                    self.advance();
+                }
+                '\n' => {
+                    self.line += 1;
+                    self.advance();
+                }
+                '/' => {
+                    if self.peek_next() == '/' {
+                        // A comment goes until the end of the line.
+                        while self.peek() != '\n' && !self.is_at_end() {
+                            self.advance();
+                        }
+                    } else {
+                        return;
+                    }
+                }
+                _ => return,
+            }
+        }
+    }
+
     pub fn scan_token(&mut self) -> Token {
+        self.skip_whitespace();
+
         self.start = self.current;
 
         if self.is_at_end() {
