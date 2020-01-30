@@ -83,8 +83,15 @@ impl<'a> Scanner<'a> {
     }
 
     fn is_at_end(&self) -> bool {
-        // `nth` is O(n). We should be faster.
+        // TODO: `nth` is O(n). We should be faster.
         self.source.chars().nth(self.current).unwrap() == '\0'
+    }
+
+    fn advance(&mut self) -> char {
+        self.current += 1;
+
+        // TODO: `nth` is O(n). We should be faster.
+        self.source.chars().nth(self.current - 1).unwrap()
     }
 
     fn make_token(&self, typ: TokenType) -> Token {
@@ -108,6 +115,23 @@ impl<'a> Scanner<'a> {
 
         if self.is_at_end() {
             return self.make_token(TokenType::EOF);
+        }
+
+        let c: char = self.advance();
+
+        match c {
+            '('=> return self.make_token(TokenType::LeftParen),
+            ')'=> return self.make_token(TokenType::RightParen),
+            '{'=> return self.make_token(TokenType::LeftBrace),
+            '}'=> return self.make_token(TokenType::RightBrace),
+            ';'=> return self.make_token(TokenType::Semicolon),
+            ','=> return self.make_token(TokenType::Comma),
+            '.'=> return self.make_token(TokenType::Dot),
+            '-'=> return self.make_token(TokenType::Minus),
+            '+'=> return self.make_token(TokenType::Plus),
+            '/'=> return self.make_token(TokenType::Slash),
+            '*'=> return self.make_token(TokenType::Star),
+            _ => unimplemented!(),
         }
 
         return self.error_token("Unexpected character.");
