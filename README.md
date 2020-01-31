@@ -21,4 +21,5 @@ Each commit corresponds to one chapter in the book:
   
   ## Part III: A Bytecode Virtual Machine 
   * [Chapter 14: Chunks of Bytecode](https://github.com/jeschkies/lox-rs/commit/bcec748d59b568c3b6ce93d6d07b40b14f44caa0)
-  * [Chapter 15: A Virtual Machone](https://github.com/jeschkies/lox-rs/commit/5c528b63f0ea4a5cfce3757b6c0a5323cba1abf6)
+  * [Chapter 15: A Virtual Machine](https://github.com/jeschkies/lox-rs/commit/5c528b63f0ea4a5cfce3757b6c0a5323cba1abf6)
+  * [Chapter 16: Compiling Expressions](https://github.com/jeschkies/lox-rs/commit/60563c11311c6c1efc268646305028eeb6024d29)
