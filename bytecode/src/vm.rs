@@ -16,7 +16,7 @@ macro_rules! binary_op{
 static STACK_MAX: usize = 245;
 
 pub struct VM {
-    chunk: Chunk, // TODO: might use ref again
+    chunk: Chunk,
     ip: *const OpCode,
     stack: Vec<Value>,
 }
@@ -40,25 +40,22 @@ impl VM {
     }
 
     pub fn interpret(&mut self, source: &str) -> InterpretResult {
-        let compiler = Compiler;
+        let mut compiler = Compiler::new();
 
-        // TODO: Use Result
-        let mut chunk = Chunk::new();
-        if !compiler.compile(source, &mut chunk) {
+        if let Some(chunk) = compiler.compile(source) {
+            self.chunk = chunk;
+            self.ip = self.chunk.code;
+
+            let result = self.run();
+
+            // TODO: free chunk
+            result
+        } else {
             return InterpretResult::CompileError;
         }
-
-        self.chunk = chunk;
-        self.ip = self.chunk.code;
-
-        let result = self.run();
-
-        // TODO: free chunk
-
-        result
     }
 
-    fn run(mut self) -> InterpretResult {
+    fn run(&mut self) -> InterpretResult {
         let mut position: usize = 0; // TODO: infer position from self.ip.
         loop {
             let instruction: OpCode = unsafe {

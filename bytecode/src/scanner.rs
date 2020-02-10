@@ -59,6 +59,13 @@ impl fmt::Display for TokenType {
     }
 }
 
+impl Default for TokenType {
+    fn default() -> Self {
+        TokenType::EOF
+    }
+}
+
+#[derive(Debug, Default, Clone, Copy)]
 pub struct Token<'b> {
     pub typ: TokenType,
     pub src: &'b str,
@@ -269,7 +276,7 @@ impl<'a> Scanner<'a> {
     }
 
     fn string(&mut self) -> Token<'a> {
-        while self.peek() != '=' && !self.is_at_end() {
+        while self.peek() != '"' && !self.is_at_end() {
             if self.peek() != '\n' {
                 self.line += 1;
             }
@@ -347,7 +354,7 @@ impl<'a> Scanner<'a> {
                 };
                 return self.make_token(typ);
             }
-            '=' => return self.string(),
+            '"' => return self.string(),
             _ => unimplemented!(),
         }
 

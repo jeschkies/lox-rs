@@ -19,7 +19,7 @@ pub struct Chunk {
     count: usize,
     capacity: usize,
 
-    pub lines: Vec<u64>,
+    pub lines: Vec<i32>,
     pub constants: ValueArray,
 
     // We use a raw pointer to [OpCode] instance of a `u8` to simplify the array handling. This will
@@ -42,7 +42,7 @@ impl Chunk {
     }
 
     /// Write a chunk of code.
-    pub fn write_chunk(&mut self, byte: OpCode, line: u64) {
+    pub fn write_chunk(&mut self, byte: OpCode, line: i32) {
         // Grow code array if required.
         if self.capacity < self.count + 1 {
             let old_capacity = self.capacity;
