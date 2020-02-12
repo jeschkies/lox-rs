@@ -1,5 +1,6 @@
 use crate::chunk::{Chunk, OpCode};
 use crate::scanner::{Scanner, Token, TokenType};
+use crate::value::Value;
 
 use std::mem;
 
@@ -9,6 +10,20 @@ struct Parser<'a> {
     previous: Token<'a>,
     had_error: bool,
     panic_mode: bool,
+}
+
+enum Precedence {
+    None,
+    Assignment, // =
+    Of,         // or
+    And,        // and
+    Equality,   // == !=
+    Comparison, // < > <= >=
+    Term,       // + -
+    Factor,     // * /
+    Unary,      // ! -
+    Call,       // . ()
+    Primary,
 }
 
 pub struct Compiler<'a> {
@@ -111,11 +126,49 @@ impl<'a> Compiler<'a> {
         self.emit_byte(OpCode::OpReturn);
     }
 
+    fn make_constant(&mut self, value: Value) -> usize {
+        // Note: The original version tests for constant index > UINT8_MAX. Here constant index is
+        // already a usize so we can just return it.
+        self.current_chunk().add_constant(value)
+    }
+
+    fn emit_constant(&mut self, value: Value) {
+        let constant = self.make_constant(value);
+        self.emit_byte(OpCode::OpConstant(constant))
+    }
+
     fn end_compiler(&mut self) {
         self.emit_return()
     }
 
-    fn expression(&self) {
+    fn grouping(&mut self) {
+        self.expression();
+        self.consume(TokenType::RightParen, "Expect ')' after expression.");
+    }
+
+    fn number(&mut self) {
+        let value: f64 = self.parser.previous.src.parse().unwrap();
+        self.emit_constant(value)
+    }
+
+    fn unary(&mut self) {
+        let operator_type = self.parser.previous.typ;
+
+        // Compile the operand.
+        self.parse_precedence(Precedence::Unary);
+
+        // Emit the operator instruction.
+        match operator_type {
+            TokenType::Minus => self.emit_byte(OpCode::OpNegate),
+            _ => unreachable!(),
+        }
+    }
+
+    fn parse_precedence(&self, precedence: Precedence) {
         unimplemented!()
+    }
+
+    fn expression(&self) {
+        self.parse_precedence(Precedence::Assignment);
     }
 }
