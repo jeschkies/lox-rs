@@ -32,7 +32,6 @@ enum Precedence {
 }
 
 impl From<i32> for Precedence {
-
     fn from(i: i32) -> Self {
         match i {
             0 => Precedence::None,
@@ -59,7 +58,7 @@ impl Add<i32> for &Precedence {
     }
 }
 
-type ParseFn = fn() -> ();
+type ParseFn = fn(&mut Compiler) -> ();
 
 struct ParseRule {
     prefix: Option<ParseFn>,
@@ -67,33 +66,41 @@ struct ParseRule {
     precedence: Precedence,
 }
 
-lazy_static! {
-    static ref PARSE_RULES: HashMap<TokenType, ParseRule> = {
-        let mut m = HashMap::new();
-        m.insert(
-            TokenType::LeftParen,
-            ParseRule {
-                prefix: None,
-                infix: None,
-                precedence: Precedence::None,
-            },
-        );
-        m
-    };
+impl ParseRule {
+    fn new(prefix: Option<ParseFn>, infix: Option<ParseFn>, precedence: Precedence) -> Self {
+        ParseRule {
+            prefix,
+            infix,
+            precedence,
+        }
+    }
 }
+
+lazy_static! {}
 
 pub struct Compiler<'a> {
     parser: Parser<'a>,
     compiling_chunk: Chunk,
     scanner: Scanner<'a>,
+    parse_rules: HashMap<TokenType, ParseRule>,
 }
 
 impl<'a> Compiler<'a> {
     pub fn new() -> Self {
+        let parse_rules: HashMap<TokenType, ParseRule> = {
+            let mut m: HashMap<TokenType, ParseRule> = HashMap::new();
+            m.insert(
+                TokenType::LeftParen,
+                ParseRule::new(Some(Compiler::grouping), None, Precedence::None),
+            );
+            m
+        };
+
         Compiler {
             parser: Parser::default(),
             compiling_chunk: Chunk::new(),
             scanner: Scanner::new(""),
+            parse_rules: parse_rules,
         }
     }
 
@@ -202,7 +209,7 @@ impl<'a> Compiler<'a> {
         let operator_type = self.parser.previous.typ;
 
         // Compile the right operand.
-        let rule = self.get_rule(&operator_type) ;
+        let rule = self.get_rule(&operator_type);
         self.parse_precedence((&rule.precedence + 1));
 
         // Emit the operator instruction.
@@ -243,7 +250,7 @@ impl<'a> Compiler<'a> {
     }
 
     fn get_rule(&self, typ: &TokenType) -> &ParseRule {
-        &PARSE_RULES[typ]
+        &self.parse_rules[typ]
     }
 
     fn expression(&self) {
