@@ -8,6 +8,12 @@ use std::convert::From;
 use std::mem;
 use std::ops::Add;
 
+macro_rules! parse_rule {
+    ( $m:ident, $token_type:ident => $prefix:expr, $infix:expr, $precedence:ident) => {{
+        $m.insert(TokenType::$token_type, ParseRule::new($prefix, $infix, Precedence::$precedence));
+    }};
+}
+
 #[derive(Default)]
 struct Parser<'a> {
     current: Token<'a>,
@@ -67,7 +73,11 @@ struct ParseRule<'r> {
 }
 
 impl<'a> ParseRule<'a> {
-    fn new(prefix: Option<ParseFn<'a>>, infix: Option<ParseFn<'a>>, precedence: Precedence) -> Self {
+    fn new(
+        prefix: Option<ParseFn<'a>>,
+        infix: Option<ParseFn<'a>>,
+        precedence: Precedence,
+    ) -> Self {
         ParseRule {
             prefix,
             infix,
@@ -84,13 +94,50 @@ pub struct Compiler<'a> {
 }
 
 impl<'a> Compiler<'a> {
+    #[rustfmt::skip::macros(parse_rule)]
     pub fn new() -> Self {
         let parse_rules: HashMap<TokenType, ParseRule> = {
             let mut m: HashMap<TokenType, ParseRule> = HashMap::new();
-            m.insert(
-                TokenType::LeftParen,
-                ParseRule::new(Some(Compiler::grouping), None, Precedence::None),
-            );
+            parse_rule!(m, LeftParen    => Some(Compiler::grouping), None,                   None);
+            parse_rule!(m, RightParen   => None,                     None,                   None);
+            parse_rule!(m, LeftBrace    => None,                     None,                   None);
+            parse_rule!(m, RightBrace   => None,                     None,                   None);
+            parse_rule!(m, Comma        => None,                     None,                   None);
+            parse_rule!(m, Dot          => None,                     None,                   None);
+            parse_rule!(m, Minus        => Some(Compiler::unary),    Some(Compiler::binary), Term);
+            parse_rule!(m, Plus         => None,                     Some(Compiler::binary), Term);
+            parse_rule!(m, Semicolon    => None,                     None,                   None);
+            parse_rule!(m, Slash        => None,                     Some(Compiler::binary), Factor);
+            parse_rule!(m, Star         => None,                     Some(Compiler::binary), Factor);
+            parse_rule!(m, Bang         => None,                     None,                   None);
+            parse_rule!(m, BangEqual    => None,                     None,                   None);
+            parse_rule!(m, Equal        => None,                     None,                   None);
+            parse_rule!(m, EqualEqual   => None,                     None,                   None);
+            parse_rule!(m, Greater      => None,                     None,                   None);
+            parse_rule!(m, GreaterEqual => None,                     None,                   None);
+            parse_rule!(m, Less         => None,                     None,                   None);
+            //            parse_rule!(m, LessEqual{ None,     None,    Precedence::None },       // TOKEN_LESS_EQUAL
+            //            parse_rule!(m, Identifier{ None,     None,    Precedence::None },       // TOKEN_IDENTIFIER
+            //            parse_rule!(m, String{ None,     None,    Precedence::None },       // TOKEN_STRING
+            //            parse_rule!(m, Number{ number,   None,    Precedence::None },       // TOKEN_NUMBER
+            //            parse_rule!(m, And{ None,     None,    Precedence::None },       // TOKEN_AND
+            //            parse_rule!(m, Class,{ None,     None,    Precedence::None },       // TOKEN_CLASS
+            //            parse_rule!(m, Else, { None,     None,    Precedence::None },       // TOKEN_ELSE
+            //            parse_rule!(m, False{ None,     None,    Precedence::None },       // TOKEN_FALSE
+            //            parse_rule!(m, For,{ None,     None,    Precedence::None },       // TOKEN_FOR
+            //            parse_rule!(m, Fun{ None,     None,    Precedence::None },       // TOKEN_FUN
+            //            parse_rule!(m, If,{ None,     None,    Precedence::None },       // TOKEN_IF
+            //            parse_rule!(m, Nil{ None,     None,    Precedence::None },       // TOKEN_NIL
+            //            parse_rule!(m, Or{ None,     None,    Precedence::None },       // TOKEN_OR
+            //            parse_rule!(m, Print{ None,     None,    Precedence::None },       // TOKEN_PRINT
+            //            parse_rule!(m, Return{ None,     None,    Precedence::None },       // TOKEN_RETURN
+            //            parse_rule!(m, Super{ None,     None,    Precedence::None },       // TOKEN_SUPER
+            //            parse_rule!(m, This{ None,     None,    Precedence::None },       // TOKEN_THIS
+            //            parse_rule!(m, True{ None,     None,    Precedence::None },       // TOKEN_TRUE
+            //            parse_rule!(m, Var{ None,     None,    Precedence::None },       // TOKEN_VAR
+            //            parse_rule!(m, While{ None,     None,    Precedence::None },       // TOKEN_WHILE
+            //            parse_rule!(m, Error{ None,     None,    Precedence::None },       // TOKEN_ERROR
+            //            parse_rule!(m, EOF{ None,     None,    Precedence::None },       // TOKEN_EOF
             m
         };
 
