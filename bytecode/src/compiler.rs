@@ -2,7 +2,11 @@ use crate::chunk::{Chunk, OpCode};
 use crate::scanner::{Scanner, Token, TokenType};
 use crate::value::Value;
 
+use lazy_static::lazy_static;
+use std::collections::HashMap;
+use std::convert::From;
 use std::mem;
+use std::ops::Add;
 
 #[derive(Default)]
 struct Parser<'a> {
@@ -12,6 +16,7 @@ struct Parser<'a> {
     panic_mode: bool,
 }
 
+#[derive(Clone)]
 enum Precedence {
     None,
     Assignment, // =
@@ -24,6 +29,57 @@ enum Precedence {
     Unary,      // ! -
     Call,       // . ()
     Primary,
+}
+
+impl From<i32> for Precedence {
+
+    fn from(i: i32) -> Self {
+        match i {
+            0 => Precedence::None,
+            1 => Precedence::Assignment,
+            2 => Precedence::Of,
+            3 => Precedence::And,
+            4 => Precedence::Equality,
+            5 => Precedence::Comparison,
+            6 => Precedence::Term,
+            7 => Precedence::Factor,
+            8 => Precedence::Unary,
+            9 => Precedence::Call,
+            10 => Precedence::Primary,
+            _ => unreachable!(),
+        }
+    }
+}
+
+impl Add<i32> for &Precedence {
+    type Output = Precedence;
+
+    fn add(self, other: i32) -> Precedence {
+        Precedence::from(self.clone() as i32 + other)
+    }
+}
+
+type ParseFn = fn() -> ();
+
+struct ParseRule {
+    prefix: Option<ParseFn>,
+    infix: Option<ParseFn>,
+    precedence: Precedence,
+}
+
+lazy_static! {
+    static ref PARSE_RULES: HashMap<TokenType, ParseRule> = {
+        let mut m = HashMap::new();
+        m.insert(
+            TokenType::LeftParen,
+            ParseRule {
+                prefix: None,
+                infix: None,
+                precedence: Precedence::None,
+            },
+        );
+        m
+    };
 }
 
 pub struct Compiler<'a> {
@@ -141,6 +197,24 @@ impl<'a> Compiler<'a> {
         self.emit_return()
     }
 
+    fn binary(&mut self) {
+        // Remember the operator.
+        let operator_type = self.parser.previous.typ;
+
+        // Compile the right operand.
+        let rule = self.get_rule(&operator_type) ;
+        self.parse_precedence((&rule.precedence + 1));
+
+        // Emit the operator instruction.
+        match operator_type {
+            TokenType::Plus => self.emit_byte(OpCode::OpAdd),
+            TokenType::Minus => self.emit_byte(OpCode::OpSubtract),
+            TokenType::Star => self.emit_byte(OpCode::OpMultiply),
+            TokenType::Slash => self.emit_byte(OpCode::OpDivide),
+            _ => unreachable!(),
+        }
+    }
+
     fn grouping(&mut self) {
         self.expression();
         self.consume(TokenType::RightParen, "Expect ')' after expression.");
@@ -166,6 +240,10 @@ impl<'a> Compiler<'a> {
 
     fn parse_precedence(&self, precedence: Precedence) {
         unimplemented!()
+    }
+
+    fn get_rule(&self, typ: &TokenType) -> &ParseRule {
+        &PARSE_RULES[typ]
     }
 
     fn expression(&self) {
