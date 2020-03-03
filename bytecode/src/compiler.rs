@@ -58,16 +58,16 @@ impl Add<i32> for &Precedence {
     }
 }
 
-type ParseFn = fn(&mut Compiler) -> ();
+type ParseFn<'r> = fn(&mut Compiler<'r>) -> ();
 
-struct ParseRule {
-    prefix: Option<ParseFn>,
-    infix: Option<ParseFn>,
+struct ParseRule<'r> {
+    prefix: Option<ParseFn<'r>>,
+    infix: Option<ParseFn<'r>>,
     precedence: Precedence,
 }
 
-impl ParseRule {
-    fn new(prefix: Option<ParseFn>, infix: Option<ParseFn>, precedence: Precedence) -> Self {
+impl<'a> ParseRule<'a> {
+    fn new(prefix: Option<ParseFn<'a>>, infix: Option<ParseFn<'a>>, precedence: Precedence) -> Self {
         ParseRule {
             prefix,
             infix,
@@ -76,13 +76,11 @@ impl ParseRule {
     }
 }
 
-lazy_static! {}
-
 pub struct Compiler<'a> {
     parser: Parser<'a>,
     compiling_chunk: Chunk,
     scanner: Scanner<'a>,
-    parse_rules: HashMap<TokenType, ParseRule>,
+    parse_rules: HashMap<TokenType, ParseRule<'a>>,
 }
 
 impl<'a> Compiler<'a> {
@@ -249,7 +247,7 @@ impl<'a> Compiler<'a> {
         unimplemented!()
     }
 
-    fn get_rule(&self, typ: &TokenType) -> &ParseRule {
+    fn get_rule(&self, typ: &TokenType) -> &ParseRule<'a> {
         &self.parse_rules[typ]
     }
 
