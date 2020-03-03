@@ -8,4 +8,3 @@ edition = "2018"
 debug_trace_execution = []
 
 [dependencies]
-lazy_static = "1.4.0"

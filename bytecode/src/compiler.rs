@@ -2,7 +2,6 @@ use crate::chunk::{Chunk, OpCode};
 use crate::scanner::{Scanner, Token, TokenType};
 use crate::value::Value;
 
-use lazy_static::lazy_static;
 use std::collections::HashMap;
 use std::convert::From;
 use std::mem;
@@ -254,8 +253,8 @@ impl<'a> Compiler<'a> {
         let operator_type = self.parser.previous.typ;
 
         // Compile the right operand.
-        let rule = self.get_rule(&operator_type);
-        self.parse_precedence((&rule.precedence + 1));
+        let rule_precedence = &self.get_rule(&operator_type).precedence + 1;
+        self.parse_precedence(rule_precedence);
 
         // Emit the operator instruction.
         match operator_type {
@@ -290,15 +289,21 @@ impl<'a> Compiler<'a> {
         }
     }
 
-    fn parse_precedence(&self, precedence: Precedence) {
-        unimplemented!()
+    fn parse_precedence(&mut self, precedence: Precedence) {
+        self.advance();
+        let prefix_rule = self.get_rule(&self.parser.previous.typ).prefix;
+        if let Some(rule) = prefix_rule {
+           rule(self);
+        } else {
+            self.error("Expect expression.");
+        }
     }
 
     fn get_rule(&self, typ: &TokenType) -> &ParseRule<'a> {
         &self.parse_rules[typ]
     }
 
-    fn expression(&self) {
+    fn expression(&mut self) {
         self.parse_precedence(Precedence::Assignment);
     }
 }
