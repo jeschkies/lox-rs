@@ -13,6 +13,10 @@ macro_rules! binary_op{
     };
 }
 
+macro_rules runtime_error {
+
+}
+
 static STACK_MAX: usize = 245;
 
 pub struct VM {
@@ -84,8 +88,13 @@ impl VM {
                 OpCode::OpMultiply => binary_op!(self, *),
                 OpCode::OpDivide => binary_op!(self, /),
                 OpCode::OpNegate => {
+                    if !self.peek(0).is_number() {
+                        self.runtime_error("Operand must be a number.");
+                        return InterpretResult::RuntimeError;
+                    }
+
                     let value = self.stack.pop().expect("The stack was empty!");
-                    self.stack.push(-value);
+                    self.stack.push(Value::new_number(-value.as_number()));
                 }
                 OpCode::OpReturn => {
                     print_value(self.stack.pop().expect("The stack was empty!"));
@@ -94,6 +103,14 @@ impl VM {
                 }
             }
         }
+    }
+
+    fn peek(&self, distance: i32) -> Value {
+        self.stack[self.stack.len() - distance -1]
+    }
+
+    fn runtime_error(&self, format: &str) {
+
     }
 
     fn read_constant(&self, index: usize) -> Value {

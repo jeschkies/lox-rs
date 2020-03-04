@@ -283,7 +283,7 @@ impl<'a> Compiler<'a> {
 
     fn number(&mut self) {
         let value: f64 = self.parser.previous.src.parse().unwrap();
-        self.emit_constant(value)
+        self.emit_constant(Value::new_number(value))
     }
 
     fn unary(&mut self) {
