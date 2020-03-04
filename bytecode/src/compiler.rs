@@ -1,4 +1,5 @@
 use crate::chunk::{Chunk, OpCode};
+use crate::debug::disassemble_chunk;
 use crate::scanner::{Scanner, Token, TokenType};
 use crate::value::Value;
 
@@ -248,7 +249,13 @@ impl<'a> Compiler<'a> {
     }
 
     fn end_compiler(&mut self) {
-        self.emit_return()
+        self.emit_return();
+
+        if cfg!(feature = "debug_trace_execution") {
+            if self.parser.had_error {
+                disassemble_chunk(self.current_chunk(), "code");
+            }
+        }
     }
 
     fn binary(&mut self) {
