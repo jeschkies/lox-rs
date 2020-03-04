@@ -9,7 +9,10 @@ use std::ops::Add;
 
 macro_rules! parse_rule {
     ( $m:ident, $token_type:ident => $prefix:expr, $infix:expr, $precedence:ident) => {{
-        $m.insert(TokenType::$token_type, ParseRule::new($prefix, $infix, Precedence::$precedence));
+        $m.insert(
+            TokenType::$token_type,
+            ParseRule::new($prefix, $infix, Precedence::$precedence),
+        );
     }};
 }
 
@@ -21,7 +24,7 @@ struct Parser<'a> {
     panic_mode: bool,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
 enum Precedence {
     None,
     Assignment, // =
@@ -293,7 +296,16 @@ impl<'a> Compiler<'a> {
         self.advance();
         let prefix_rule = self.get_rule(&self.parser.previous.typ).prefix;
         if let Some(rule) = prefix_rule {
-           rule(self);
+            rule(self);
+
+            while precedence <= self.get_rule(&self.parser.current.typ).precedence {
+                self.advance();
+                let infix_rule = self
+                    .get_rule(&self.parser.previous.typ)
+                    .infix
+                    .expect("No infix defined.");
+                infix_rule(self);
+            }
         } else {
             self.error("Expect expression.");
         }
