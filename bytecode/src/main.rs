@@ -11,8 +11,6 @@ use std::fs;
 use std::io::{self, Read};
 use std::process::exit;
 
-use chunk::{Chunk, OpCode};
-use debug::disassemble_chunk;
 use error::Error;
 use vm::{InterpretResult, VM};
 
@@ -56,7 +54,7 @@ impl Lox {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
-    let mut chunk = Chunk::new();
+    //let mut chunk = Chunk::new();
 
     let mut program = Lox::new();
 
@@ -69,7 +67,6 @@ fn main() -> Result<(), Box<dyn std::error::Error + 'static>> {
             exit(64)
         }
     }
-    //disassemble_chunk(&chunk, "test chunk");
 
     // No need to free chunk since we implemented `Drop`.
     Ok(())

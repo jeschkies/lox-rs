@@ -1,6 +1,6 @@
 use std::fmt;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum TokenType {
     // Single-character tokens.
     LeftParen,
@@ -59,6 +59,13 @@ impl fmt::Display for TokenType {
     }
 }
 
+impl Default for TokenType {
+    fn default() -> Self {
+        TokenType::EOF
+    }
+}
+
+#[derive(Debug, Default, Clone, Copy)]
 pub struct Token<'b> {
     pub typ: TokenType,
     pub src: &'b str,
@@ -150,7 +157,7 @@ impl<'a> Scanner<'a> {
         true
     }
 
-    fn make_token(&self, typ: TokenType) -> Token {
+    fn make_token(&self, typ: TokenType) -> Token<'a> {
         Token {
             typ: typ,
             src: &self.source[self.start..self.current],
@@ -158,7 +165,7 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    fn error_token(&self, message: &'static str) -> Token {
+    fn error_token(&self, message: &'static str) -> Token<'a> {
         Token {
             typ: TokenType::Error,
             src: message,
@@ -241,7 +248,7 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    fn identifier(&mut self) -> Token {
+    fn identifier(&mut self) -> Token<'a> {
         while self.is_alpha(self.peek()) || self.is_digit(self.peek()) {
             self.advance();
         }
@@ -250,7 +257,7 @@ impl<'a> Scanner<'a> {
         self.make_token(typ)
     }
 
-    fn number(&mut self) -> Token {
+    fn number(&mut self) -> Token<'a> {
         while self.is_digit(self.peek()) {
             self.advance();
         }
@@ -268,8 +275,8 @@ impl<'a> Scanner<'a> {
         self.make_token(TokenType::Number)
     }
 
-    fn string(&mut self) -> Token {
-        while self.peek() != '=' && !self.is_at_end() {
+    fn string(&mut self) -> Token<'a> {
+        while self.peek() != '"' && !self.is_at_end() {
             if self.peek() != '\n' {
                 self.line += 1;
             }
@@ -285,7 +292,7 @@ impl<'a> Scanner<'a> {
         self.make_token(TokenType::String)
     }
 
-    pub fn scan_token(&mut self) -> Token {
+    pub fn scan_token(&mut self) -> Token<'a> {
         self.skip_whitespace();
 
         self.start = self.current;
@@ -347,7 +354,7 @@ impl<'a> Scanner<'a> {
                 };
                 return self.make_token(typ);
             }
-            '=' => return self.string(),
+            '"' => return self.string(),
             _ => unimplemented!(),
         }
 
