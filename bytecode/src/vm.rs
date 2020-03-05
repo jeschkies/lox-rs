@@ -13,8 +13,25 @@ macro_rules! binary_op{
     };
 }
 
-macro_rules runtime_error {
+macro_rules! runtime_error {
+    ( $vm:ident, $format:expr) => {{
+        eprintln!($format);
 
+        let instruction = $vm.ip as usize - $vm.chunk.code as usize;
+        let line = $vm.chunk.lines[instruction];
+        eprintln!("[line {:>4}] in script", line);
+
+        $vm.reset_stack();
+    }};
+    ( $vm:ident, $format:expr, $( $arg:expr),* ) => {{
+        eprintln!($format, $( $arg ),*);
+
+        let instruction = $vm.ip as usize - $vm.chunk.code as usize;
+        let line = $vm.chunk.lines[instruction];
+        eprintln!("[line {:>4}] in script", line);
+
+        $vm.reset_stack();
+    }}
 }
 
 static STACK_MAX: usize = 245;
@@ -89,7 +106,7 @@ impl VM {
                 OpCode::OpDivide => binary_op!(self, /),
                 OpCode::OpNegate => {
                     if !self.peek(0).is_number() {
-                        self.runtime_error("Operand must be a number.");
+                        runtime_error!(self, "Operand must be a number.");
                         return InterpretResult::RuntimeError;
                     }
 
@@ -105,12 +122,13 @@ impl VM {
         }
     }
 
-    fn peek(&self, distance: i32) -> Value {
-        self.stack[self.stack.len() - distance -1]
+    fn reset_stack(&mut self) {
+        // Set top of stack to the beginning
+        self.stack.clear();
     }
 
-    fn runtime_error(&self, format: &str) {
-
+    fn peek(&self, distance: usize) -> Value {
+        self.stack[self.stack.len() - distance -1]
     }
 
     fn read_constant(&self, index: usize) -> Value {
