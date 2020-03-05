@@ -11,7 +11,7 @@ pub fn disassemble_chunk(chunk: &Chunk, name: &str) {
 
 fn constant_instruction(name: &str, chunk: &Chunk, constant_index: usize) {
     print!("{:<16} {:>4} '", name, constant_index);
-    print_value(chunk.constants[constant_index]);
+    print_value(&chunk.constants[constant_index]);
     println!("'");
 }
 

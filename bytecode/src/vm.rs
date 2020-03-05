@@ -3,16 +3,6 @@ use crate::compiler::Compiler;
 use crate::debug::disassemble_instruction;
 use crate::value::{print_value, Value};
 
-macro_rules! binary_op{
-    ( $sel:ident, $op:tt ) => {
-        {
-            let b = $sel.stack.pop().expect("The stack was empty!");
-            let a = $sel.stack.pop().expect("The stack was empty!");
-            $sel.stack.push(a $op b);
-        }
-    };
-}
-
 macro_rules! runtime_error {
     ( $vm:ident, $format:expr) => {{
         eprintln!($format);
@@ -32,6 +22,21 @@ macro_rules! runtime_error {
 
         $vm.reset_stack();
     }}
+}
+
+macro_rules! binary_op{
+    ( $vm:ident, $value_constructor:expr, $op:tt ) => {
+        {
+            if !$vm.peek(0).is_number() || !$vm.peek(1).is_number() {
+                runtime_error!($vm, "Operands must be numbers.");
+                return InterpretResult::RuntimeError;
+            }
+
+            let b = $vm.stack.pop().expect("The stack was empty!").as_number();
+            let a = $vm.stack.pop().expect("The stack was empty!").as_number();
+            $vm.stack.push($value_constructor(a $op b));
+        }
+    };
 }
 
 static STACK_MAX: usize = 245;
@@ -100,10 +105,10 @@ impl VM {
                     let constant = self.read_constant(index);
                     self.stack.push(constant);
                 }
-                OpCode::OpAdd => binary_op!(self, +),
-                OpCode::OpSubtract => binary_op!(self, -),
-                OpCode::OpMultiply => binary_op!(self, *),
-                OpCode::OpDivide => binary_op!(self, /),
+                OpCode::OpAdd => binary_op!(self, Value::new_number, +),
+                OpCode::OpSubtract => binary_op!(self, Value::new_number, -),
+                OpCode::OpMultiply => binary_op!(self, Value::new_number, *),
+                OpCode::OpDivide => binary_op!(self, Value::new_number, /),
                 OpCode::OpNegate => {
                     if !self.peek(0).is_number() {
                         runtime_error!(self, "Operand must be a number.");
@@ -114,7 +119,7 @@ impl VM {
                     self.stack.push(Value::new_number(-value.as_number()));
                 }
                 OpCode::OpReturn => {
-                    print_value(self.stack.pop().expect("The stack was empty!"));
+                    print_value(&self.stack.pop().expect("The stack was empty!"));
                     println!();
                     return InterpretResult::Ok;
                 }
@@ -127,11 +132,11 @@ impl VM {
         self.stack.clear();
     }
 
-    fn peek(&self, distance: usize) -> Value {
-        self.stack[self.stack.len() - distance -1]
+    fn peek(&self, distance: usize) -> &Value {
+        &self.stack[self.stack.len() - distance - 1]
     }
 
     fn read_constant(&self, index: usize) -> Value {
-        self.chunk.constants[index]
+        self.chunk.constants[index].clone()
     }
 }
