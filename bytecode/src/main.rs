@@ -8,7 +8,7 @@ mod value;
 mod vm;
 
 use std::fs;
-use std::io::{self, Read};
+use std::io;
 use std::process::exit;
 
 use error::Error;
@@ -24,14 +24,13 @@ impl Lox {
     }
 
     fn repl(&mut self) -> Result<(), Error> {
-        let mut line = String::new();
         let stdin = io::stdin();
-        let mut handle = stdin.lock();
 
         loop {
             print!("> ");
 
-            if handle.read_to_string(&mut line)? == 0 {
+            let mut line = String::new();
+            if stdin.read_line(&mut line)? == 0 {
                 println!();
                 break;
             }

@@ -112,31 +112,31 @@ impl<'a> Compiler<'a> {
             parse_rule!(m, Semicolon    => None,                     None,                   None);
             parse_rule!(m, Slash        => None,                     Some(Compiler::binary), Factor);
             parse_rule!(m, Star         => None,                     Some(Compiler::binary), Factor);
-            parse_rule!(m, Bang         => None,                     None,                   None);
-            parse_rule!(m, BangEqual    => None,                     None,                   None);
+            parse_rule!(m, Bang         => Some(Compiler::unary),    None,                   None);
+            parse_rule!(m, BangEqual    => None,                     Some(Compiler::binary), Equality);
             parse_rule!(m, Equal        => None,                     None,                   None);
-            parse_rule!(m, EqualEqual   => None,                     None,                   None);
-            parse_rule!(m, Greater      => None,                     None,                   None);
-            parse_rule!(m, GreaterEqual => None,                     None,                   None);
-            parse_rule!(m, Less         => None,                     None,                   None);
-            parse_rule!(m, LessEqual    => None,                     None,                   None);
+            parse_rule!(m, EqualEqual   => None,                     Some(Compiler::binary), Equality);
+            parse_rule!(m, Greater      => None,                     Some(Compiler::binary), Comparison);
+            parse_rule!(m, GreaterEqual => None,                     Some(Compiler::binary), Comparison);
+            parse_rule!(m, Less         => None,                     Some(Compiler::binary), Comparison);
+            parse_rule!(m, LessEqual    => None,                     Some(Compiler::binary), Comparison);
             parse_rule!(m, Identifier   => None,                     None,                   None);
             parse_rule!(m, String       => None,                     None,                   None);
             parse_rule!(m, Number       => Some(Compiler::number),   None,                   None);
             parse_rule!(m, And          => None,                     None,                   None);
             parse_rule!(m, Class        => None,                     None,                   None);
             parse_rule!(m, Else         => None,                     None,                   None);
-            parse_rule!(m, False        => None,                     None,                   None);
+            parse_rule!(m, False        => Some(Compiler::literal),  None,                   None);
             parse_rule!(m, For          => None,                     None,                   None);
             parse_rule!(m, Fun          => None,                     None,                   None);
             parse_rule!(m, If           => None,                     None,                   None);
-            parse_rule!(m, Nil          => None,                     None,                   None);
+            parse_rule!(m, Nil          => Some(Compiler::literal),  None,                   None);
             parse_rule!(m, Or           => None,                     None,                   None);
             parse_rule!(m, Print        => None,                     None,                   None);
             parse_rule!(m, Return       => None,                     None,                   None);
             parse_rule!(m, Super        => None,                     None,                   None);
             parse_rule!(m, This         => None,                     None,                   None);
-            parse_rule!(m, True         => None,                     None,                   None);
+            parse_rule!(m, True         => Some(Compiler::literal),  None,                   None);
             parse_rule!(m, Var          => None,                     None,                   None);
             parse_rule!(m, While        => None,                     None,                   None);
             parse_rule!(m, Error        => None,                     None,                   None);
@@ -268,10 +268,25 @@ impl<'a> Compiler<'a> {
 
         // Emit the operator instruction.
         match operator_type {
+            TokenType::BangEqual => self.emit_bytes(OpCode::OpEqual, OpCode::OpNot),
+            TokenType::EqualEqual => self.emit_byte(OpCode::OpEqual),
+            TokenType::Greater => self.emit_byte(OpCode::OpGreater),
+            TokenType::GreaterEqual => self.emit_bytes(OpCode::OpLess, OpCode::OpNot),
+            TokenType::Less => self.emit_byte(OpCode::OpLess),
+            TokenType::LessEqual => self.emit_bytes(OpCode::OpGreater, OpCode::OpNot),
             TokenType::Plus => self.emit_byte(OpCode::OpAdd),
             TokenType::Minus => self.emit_byte(OpCode::OpSubtract),
             TokenType::Star => self.emit_byte(OpCode::OpMultiply),
             TokenType::Slash => self.emit_byte(OpCode::OpDivide),
+            _ => unreachable!(),
+        }
+    }
+
+    fn literal(&mut self) {
+        match self.parser.previous.typ {
+            TokenType::False => self.emit_byte(OpCode::OpFalse),
+            TokenType::Nil => self.emit_byte(OpCode::OpNil),
+            TokenType::True => self.emit_byte(OpCode::OpTrue),
             _ => unreachable!(),
         }
     }
@@ -283,7 +298,7 @@ impl<'a> Compiler<'a> {
 
     fn number(&mut self) {
         let value: f64 = self.parser.previous.src.parse().unwrap();
-        self.emit_constant(value)
+        self.emit_constant(Value::new_number(value))
     }
 
     fn unary(&mut self) {
@@ -294,6 +309,7 @@ impl<'a> Compiler<'a> {
 
         // Emit the operator instruction.
         match operator_type {
+            TokenType::Bang => self.emit_byte(OpCode::OpNot),
             TokenType::Minus => self.emit_byte(OpCode::OpNegate),
             _ => unreachable!(),
         }

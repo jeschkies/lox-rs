@@ -7,10 +7,17 @@ use std::ptr;
 #[derive(Debug)]
 pub enum OpCode {
     OpConstant(usize),
+    OpNil,
+    OpTrue,
+    OpFalse,
+    OpEqual,
+    OpGreater,
+    OpLess,
     OpAdd,
     OpSubtract,
     OpMultiply,
     OpDivide,
+    OpNot,
     OpNegate,
     OpReturn,
 }

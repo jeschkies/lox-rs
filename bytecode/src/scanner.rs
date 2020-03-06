@@ -89,15 +89,12 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    /// Return the character at the given position.
+    /// Return the character at the given position or '\0' if we are out of bound.
     ///
-    /// This panics if the given position does not point to a valid char.
+    /// This simulates a nul-terminated string.
     /// This method is copied from the [Rust Regex parse](https://github.com/rust-lang/regex/blob/master/regex-syntax/src/ast/parse.rs#L461).
     fn char_at(&self, i: usize) -> char {
-        self.source[i..]
-            .chars()
-            .next()
-            .unwrap_or_else(|| panic!("expected char at offset {}", i))
+        self.source[i..].chars().next().unwrap_or_else(|| '\0')
     }
 
     /// Returns the current char.

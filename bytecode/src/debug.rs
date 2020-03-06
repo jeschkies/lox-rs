@@ -11,7 +11,7 @@ pub fn disassemble_chunk(chunk: &Chunk, name: &str) {
 
 fn constant_instruction(name: &str, chunk: &Chunk, constant_index: usize) {
     print!("{:<16} {:>4} '", name, constant_index);
-    print_value(chunk.constants[constant_index]);
+    print_value(&chunk.constants[constant_index]);
     println!("'");
 }
 
@@ -32,10 +32,17 @@ pub fn disassemble_instruction(chunk: &Chunk, op_code: &OpCode, i: usize) {
         OpCode::OpConstant(constant_index) => {
             constant_instruction("OP_CONSTANT", chunk, *constant_index)
         }
+        OpCode::OpNil => simple_instruction("OP_NIL"),
+        OpCode::OpTrue => simple_instruction("OP_TRUE"),
+        OpCode::OpFalse => simple_instruction("OP_FALSE"),
+        OpCode::OpEqual => simple_instruction("OP_EQUAL"),
+        OpCode::OpGreater => simple_instruction("OP_GREATER"),
+        OpCode::OpLess => simple_instruction("OP_LESS"),
         OpCode::OpAdd => simple_instruction("OP_ADD"),
         OpCode::OpSubtract => simple_instruction("OP_SUBTRACT"),
         OpCode::OpMultiply => simple_instruction("OP_MULTIPLY"),
         OpCode::OpDivide => simple_instruction("OP_DIVIDE"),
+        OpCode::OpNot => simple_instruction("OP_NOT"),
         OpCode::OpNegate => simple_instruction("OP_NEGATE"),
         OpCode::OpReturn => simple_instruction("OP_RETURN"),
         _ => println!("Unknown opcode {:?}", op_code),
