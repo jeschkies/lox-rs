@@ -82,6 +82,23 @@ impl Value {
     }
 }
 
+impl PartialEq for Value {
+    /// This is `valuesEqual` in the book.
+    fn eq(&self, other: &Self) -> bool {
+        if self.typ != other.typ {
+            false
+        } else {
+            match self.typ {
+                ValueType::Bool => self.as_bool() == other.as_bool(),
+                ValueType::Nil => true,
+                ValueType::Number => self.as_number() == other.as_number(),
+            }
+        }
+    }
+}
+
+impl Eq for Value {}
+
 // We are not repeating the array implementation.
 pub type ValueArray = Vec<Value>;
 

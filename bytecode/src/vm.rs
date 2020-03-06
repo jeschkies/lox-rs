@@ -32,8 +32,8 @@ macro_rules! binary_op{
                 return InterpretResult::RuntimeError;
             }
 
-            let b = $vm.stack.pop().expect("The stack was empty!").as_number();
-            let a = $vm.stack.pop().expect("The stack was empty!").as_number();
+            let b = $vm.pop().as_number();
+            let a = $vm.pop().as_number();
             $vm.stack.push($value_constructor(a $op b));
         }
     };
@@ -108,26 +108,41 @@ impl VM {
                 OpCode::OpNil => self.stack.push(Value::new_nil()),
                 OpCode::OpTrue => self.stack.push(Value::new_bool(true)),
                 OpCode::OpFalse => self.stack.push(Value::new_bool(false)),
+                OpCode::OpEqual => {
+                    let b = self.pop();
+                    let a = self.pop();
+                    self.stack.push(Value::new_bool(a == b));
+                }
+                OpCode::OpGreater => binary_op!(self, Value::new_bool, >),
+                OpCode::OpLess => binary_op!(self, Value::new_bool, <),
                 OpCode::OpAdd => binary_op!(self, Value::new_number, +),
                 OpCode::OpSubtract => binary_op!(self, Value::new_number, -),
                 OpCode::OpMultiply => binary_op!(self, Value::new_number, *),
                 OpCode::OpDivide => binary_op!(self, Value::new_number, /),
+                OpCode::OpNot => {
+                    let value = self.stack.pop();
+                    self.stack.push(Value::new_bool(self.is_falsey(value)))
+                }
                 OpCode::OpNegate => {
                     if !self.peek(0).is_number() {
                         runtime_error!(self, "Operand must be a number.");
                         return InterpretResult::RuntimeError;
                     }
 
-                    let value = self.stack.pop().expect("The stack was empty!");
+                    let value = self.pop();
                     self.stack.push(Value::new_number(-value.as_number()));
                 }
                 OpCode::OpReturn => {
-                    print_value(&self.stack.pop().expect("The stack was empty!"));
+                    print_value(&self.pop());
                     println!();
                     return InterpretResult::Ok;
                 }
             }
         }
+    }
+
+    fn pop(&mut self) -> Value {
+        self.stack.pop().expect("The stack is empty!")
     }
 
     fn reset_stack(&mut self) {
@@ -137,6 +152,14 @@ impl VM {
 
     fn peek(&self, distance: usize) -> &Value {
         &self.stack[self.stack.len() - distance - 1]
+    }
+
+    fn is_falsey(&self, maybe_value: Option<Value>) -> bool {
+        if let Some(value) = maybe_value {
+            value.is_nil() || (value.is_bool() && !value.as_bool())
+        } else {
+            false
+        }
     }
 
     fn read_constant(&self, index: usize) -> Value {

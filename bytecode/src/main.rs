@@ -8,7 +8,7 @@ mod value;
 mod vm;
 
 use std::fs;
-use std::io::{self, Read};
+use std::io;
 use std::process::exit;
 
 use error::Error;
