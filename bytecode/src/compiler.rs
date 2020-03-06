@@ -126,17 +126,17 @@ impl<'a> Compiler<'a> {
             parse_rule!(m, And          => None,                     None,                   None);
             parse_rule!(m, Class        => None,                     None,                   None);
             parse_rule!(m, Else         => None,                     None,                   None);
-            parse_rule!(m, False        => None,                     None,                   None);
+            parse_rule!(m, False        => Some(Compiler::literal),  None,                   None);
             parse_rule!(m, For          => None,                     None,                   None);
             parse_rule!(m, Fun          => None,                     None,                   None);
             parse_rule!(m, If           => None,                     None,                   None);
-            parse_rule!(m, Nil          => None,                     None,                   None);
+            parse_rule!(m, Nil          => Some(Compiler::literal),  None,                   None);
             parse_rule!(m, Or           => None,                     None,                   None);
             parse_rule!(m, Print        => None,                     None,                   None);
             parse_rule!(m, Return       => None,                     None,                   None);
             parse_rule!(m, Super        => None,                     None,                   None);
             parse_rule!(m, This         => None,                     None,                   None);
-            parse_rule!(m, True         => None,                     None,                   None);
+            parse_rule!(m, True         => Some(Compiler::literal),  None,                   None);
             parse_rule!(m, Var          => None,                     None,                   None);
             parse_rule!(m, While        => None,                     None,                   None);
             parse_rule!(m, Error        => None,                     None,                   None);
@@ -272,6 +272,15 @@ impl<'a> Compiler<'a> {
             TokenType::Minus => self.emit_byte(OpCode::OpSubtract),
             TokenType::Star => self.emit_byte(OpCode::OpMultiply),
             TokenType::Slash => self.emit_byte(OpCode::OpDivide),
+            _ => unreachable!(),
+        }
+    }
+
+    fn literal(&mut self) {
+        match self.parser.previous.typ {
+            TokenType::False => self.emit_byte(OpCode::OpFalse),
+            TokenType::Nil => self.emit_byte(OpCode::OpNil),
+            TokenType::True => self.emit_byte(OpCode::OpTrue),
             _ => unreachable!(),
         }
     }

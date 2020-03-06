@@ -32,6 +32,9 @@ pub fn disassemble_instruction(chunk: &Chunk, op_code: &OpCode, i: usize) {
         OpCode::OpConstant(constant_index) => {
             constant_instruction("OP_CONSTANT", chunk, *constant_index)
         }
+        OpCode::OpNil => simple_instruction("OP_NIL"),
+        OpCode::OpTrue => simple_instruction("OP_TRUE"),
+        OpCode::OpFalse => simple_instruction("OP_FALSE"),
         OpCode::OpAdd => simple_instruction("OP_ADD"),
         OpCode::OpSubtract => simple_instruction("OP_SUBTRACT"),
         OpCode::OpMultiply => simple_instruction("OP_MULTIPLY"),

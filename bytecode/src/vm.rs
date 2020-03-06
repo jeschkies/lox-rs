@@ -66,7 +66,6 @@ impl VM {
     }
 
     pub fn interpret(&mut self, source: &str) -> InterpretResult {
-        println!("Interpreting {}", source);
         let mut compiler = Compiler::new();
 
         if let Some(chunk) = compiler.compile(source) {
@@ -106,6 +105,9 @@ impl VM {
                     let constant = self.read_constant(index);
                     self.stack.push(constant);
                 }
+                OpCode::OpNil => self.stack.push(Value::new_nil()),
+                OpCode::OpTrue => self.stack.push(Value::new_bool(true)),
+                OpCode::OpFalse => self.stack.push(Value::new_bool(false)),
                 OpCode::OpAdd => binary_op!(self, Value::new_number, +),
                 OpCode::OpSubtract => binary_op!(self, Value::new_number, -),
                 OpCode::OpMultiply => binary_op!(self, Value::new_number, *),

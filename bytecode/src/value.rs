@@ -86,6 +86,9 @@ impl Value {
 pub type ValueArray = Vec<Value>;
 
 pub fn print_value(value: &Value) {
-    // {} will print 100.0 as 100.
-    print!("{}", value.as_number());
+    match value.typ {
+        ValueType::Bool => print!("{}", value.as_bool()),
+        ValueType::Nil => print!("nil"),
+        ValueType::Number => print!("{}", value.as_number()),
+    }
 }
