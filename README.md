@@ -24,3 +24,4 @@ Each commit corresponds to one chapter in the book:
   * [Chapter 15: A Virtual Machine](https://github.com/jeschkies/lox-rs/commit/5c528b63f0ea4a5cfce3757b6c0a5323cba1abf6)
   * [Chapter 16: Scanning on Demand](https://github.com/jeschkies/lox-rs/commit/60563c11311c6c1efc268646305028eeb6024d29)
   * [Chapter 17: Compiling Expressions](https://github.com/jeschkies/lox-rs/commit/85e21bd3c9e8d9eb30e3f758051779bb1362b17e)
+  * [Chapter 18: Types of Values](https://github.com/jeschkies/lox-rs/commit/d8d1a50e33d1032d30593d402eb4600c3e714d78)
